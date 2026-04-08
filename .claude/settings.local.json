@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(.panel/Scripts/python -c ':*)",
+      "Bash(.panel/Scripts/python -c \"import psycopg2; print\\(psycopg2.__version__\\)\")"
+    ]
+  }
+}

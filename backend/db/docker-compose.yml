@@ -13,7 +13,7 @@ services:
       interval: 5s
       retries: 20
     ports:
-      - "5432:5432"        # ← esto expone la BD a tu PC para que tu API se conecte
+      - "5433:5432"        # ← puerto 5433 en tu PC → 5432 en el contenedor
     volumes:
       - db-data:/var/lib/postgresql/data
     networks:
