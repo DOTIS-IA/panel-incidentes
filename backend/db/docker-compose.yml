@@ -1,0 +1,50 @@
+name: panel-api
+
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: bd_089
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d bd_089"]
+      interval: 5s
+      retries: 20
+    ports:
+      - "5432:5432"        # ← esto expone la BD a tu PC para que tu API se conecte
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - api-net
+
+  db-bootstrap:
+    image: postgres:16
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: bd_089
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      SYNC_DB_USER: mas089_sync_rw
+      SYNC_DB_PASSWORD: local_sync_2026
+      DASHBOARD_DB_USER: mas089_dashboard_ro
+      DASHBOARD_DB_PASSWORD: local_dash_2026
+    entrypoint: ["/bin/sh", "/bootstrap/bootstrap_db.sh"]
+    volumes:
+      - ./migrations:/sql/migrations:ro
+      - ./create_app_roles.sql:/sql/create_app_roles.sql:ro
+      - ./scripts/bootstrap_db.sh:/bootstrap/bootstrap_db.sh:ro
+    networks:
+      - api-net
+    restart: "no"
+
+volumes:
+  db-data: {}
+
+networks:
+  api-net:
+    driver: bridge
