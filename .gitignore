@@ -1,0 +1,44 @@
+# ── Notas personales ──────────────────────────────────────────
+prompts.md
+
+# ── Python ────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# Entornos virtuales
+.venv/
+venv/
+.panel/
+env/
+
+# ── Variables de entorno ───────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── FastAPI / uvicorn ──────────────────────────────────────────
+*.log
+
+# ── Base de datos ──────────────────────────────────────────────
+*.sql.bak
+*.dump
+
+# ── Frontend (React / Node) ────────────────────────────────────
+node_modules/
+dist/
+build/
+.next/
+
+# ── IDEs ──────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ── OS ────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
