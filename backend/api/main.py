@@ -50,6 +50,12 @@ class IncidenteItem(BaseModel):
     is_actionable: bool | None
 
 
+class TipoExtorsion(BaseModel):
+    id_extortion: int
+    name: str
+    description: str
+
+
 CONNINFO = (
     f"host={os.getenv('DB_HOST', 'localhost')} "
     f"port={os.getenv('DB_PORT', 5432)} "
@@ -140,5 +146,18 @@ async def get_incidente(id_conv: str):
             return dict(zip(cols, row))
         except HTTPException:
             raise
+        except Exception as e:
+            raise HTTPException(status_code=503, detail=f"DB error: {e}")
+
+
+@app.get("/extortion-types", response_model=list[TipoExtorsion])
+async def get_extortion_types():
+    sql = "SELECT id_extortion, name, description FROM public.extortion_type ORDER BY id_extortion"
+    with pool.connection() as conn:
+        try:
+            cur = conn.execute(sql)
+            cols = [desc[0] for desc in cur.description]
+            rows = cur.fetchall()
+            return [dict(zip(cols, row)) for row in rows]
         except Exception as e:
             raise HTTPException(status_code=503, detail=f"DB error: {e}")
