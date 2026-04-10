@@ -27,6 +27,9 @@ cd backend/api
 # Install dependencies
 pip install -r requirements.txt
 
+# activate enviroment
+.panel/Scripts/activate
+
 # Run development server
 python -m uvicorn main:app --reload
 
