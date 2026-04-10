@@ -1,17 +1,24 @@
 import os
 from contextlib import asynccontextmanager
-from datetime import date, datetime
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Any, Optional
 
+import bcrypt
 import psycopg
 import psycopg_pool
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from jose import JWTError, jwt
 from pydantic import BaseModel
 
 load_dotenv()
+
+JWT_SECRET   = os.getenv("JWT_SECRET_KEY", "")
+JWT_ALGO     = "HS256"
+JWT_EXPIRE_H = int(os.getenv("JWT_EXPIRE_HOURS", "8"))
 
 
 class IncidenteItem(BaseModel):
@@ -56,6 +63,17 @@ class TipoExtorsion(BaseModel):
     description: str
 
 
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str
+    role: str
+
+
+class UsuarioActual(BaseModel):
+    username: str
+    role: str
+
+
 CONNINFO = (
     f"host={os.getenv('DB_HOST', 'localhost')} "
     f"port={os.getenv('DB_PORT', 5432)} "
@@ -82,9 +100,73 @@ app = FastAPI(lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173"],  # origen del frontend React (Vite), cambiar en produccion por dominio
-    allow_methods=["GET"],                    # este panel solo lee datos
+    allow_methods=["GET", "POST"],            # POST necesario para el login
     allow_headers=["*"],
 )
+
+# ── OAuth2 — le dice a FastAPI dónde está el endpoint de login ──────────────
+# Cuando un endpoint usa Depends(oauth2_scheme), FastAPI extrae automáticamente
+# el token del header: Authorization: Bearer <token>
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+
+
+# ── Función: crear JWT ───────────────────────────────────────────────────────
+def crear_token(username: str, role: str) -> str:
+    payload = {
+        "sub": username,                                        # subject — quién es
+        "role": role,                                           # rol del usuario
+        "exp": datetime.now(timezone.utc) + timedelta(hours=JWT_EXPIRE_H)  # cuándo expira
+    }
+    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGO)
+
+
+# ── Función: verificar JWT en cada request protegido ────────────────────────
+def get_usuario_actual(token: str = Depends(oauth2_scheme)) -> UsuarioActual:
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGO])
+        username: str = payload.get("sub")
+        role: str = payload.get("role")
+        if not username:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token inválido")
+        return UsuarioActual(username=username, role=role)
+    except JWTError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token inválido o expirado")
+
+
+# ── Endpoint: POST /auth/login ───────────────────────────────────────────────
+# OAuth2PasswordRequestForm lee automáticamente username y password del body
+# React lo llama con: fetch("/auth/login", { method: "POST", body: formData })
+@app.post("/auth/login", response_model=TokenResponse)
+async def login(form: OAuth2PasswordRequestForm = Depends()):
+    # 1. Buscar el usuario en la BD por username
+    sql = "SELECT username, password_hash, role, is_active FROM public.users WHERE username = %(u)s"
+    with pool.connection() as conn:
+        try:
+            cur = conn.execute(sql, {"u": form.username})
+            row = cur.fetchone()
+        except Exception as e:
+            raise HTTPException(status_code=503, detail=f"DB error: {e}")
+
+    # 2. Si no existe el usuario → 401 (mismo mensaje que contraseña incorrecta,
+    #    para no revelar si el username existe o no)
+    if row is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciales incorrectas")
+
+    username, password_hash, role, is_active = row
+
+    # 3. Si la cuenta está desactivada → 403
+    if not is_active:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cuenta desactivada")
+
+    # 4. Verificar la contraseña contra el hash guardado en la BD
+    #    bcrypt.checkpw nunca puede recuperar la contraseña original — solo compara
+    password_ok = bcrypt.checkpw(form.password.encode(), password_hash.encode())
+    if not password_ok:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciales incorrectas")
+
+    # 5. Todo correcto → generar y devolver el JWT
+    token = crear_token(username, role)
+    return TokenResponse(access_token=token, token_type="bearer", role=role)
 
 
 @app.get("/health")
