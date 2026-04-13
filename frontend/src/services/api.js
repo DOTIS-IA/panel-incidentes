@@ -1,5 +1,12 @@
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
+// Lee el token guardado en localStorage después del login
+// y lo pone en el header Authorization que FastAPI espera
+const authHeaders = () => ({
+  'Content-Type': 'application/json',
+  'Authorization': `Bearer ${localStorage.getItem('token')}`,
+});
+
 const normalizeText = (value) =>
   String(value || '')
     .normalize('NFD')
@@ -56,7 +63,7 @@ export const incidentesService = {
     const query = params.toString();
     const res = await fetch(`${BASE_URL}/data${query ? `?${query}` : ''}`, {
       method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders(),
     });
 
     const data = await handleResponse(res);
@@ -67,7 +74,9 @@ export const incidentesService = {
   },
 
   getById: async (id) => {
-    const res = await fetch(`${BASE_URL}/data/${id}`);
+    const res = await fetch(`${BASE_URL}/data/${id}`, {
+      headers: authHeaders(),
+    });
     return handleResponse(res);
   },
 
