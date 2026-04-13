@@ -183,6 +183,7 @@ async def get_data(
     fecha: Optional[str] = None,
     tipo_extorsion: Optional[int] = None,
     id_conv: Optional[str] = None,
+    _: UsuarioActual = Depends(get_usuario_actual)
 ):
     filters = []
     params = {}
@@ -213,33 +214,33 @@ async def get_data(
 
 
 @app.get("/data/{id_conv}", response_model=IncidenteItem)
-async def get_incidente(id_conv: str):
-    sql = """
-        SELECT * FROM analytics.vw_report_conversation_panel
-        WHERE id_conv_eleven = %(id_conv)s
-    """
-    with pool.connection() as conn:
-        try:
-            cur = conn.execute(sql, {"id_conv": id_conv})
-            cols = [desc[0] for desc in cur.description]
-            row = cur.fetchone()
-            if row is None:
-                raise HTTPException(status_code=404, detail="Incidente no encontrado")
-            return dict(zip(cols, row))
-        except HTTPException:
-            raise
-        except Exception as e:
-            raise HTTPException(status_code=503, detail=f"DB error: {e}")
+async def get_incidente(id_conv: str, _: UsuarioActual = Depends(get_usuario_actual)):
+        sql = """
+            SELECT * FROM analytics.vw_report_conversation_panel
+            WHERE id_conv_eleven = %(id_conv)s
+        """
+        with pool.connection() as conn:
+            try:
+                cur = conn.execute(sql, {"id_conv": id_conv})
+                cols = [desc[0] for desc in cur.description]
+                row = cur.fetchone()
+                if row is None:
+                    raise HTTPException(status_code=404, detail="Incidente no encontrado")
+                return dict(zip(cols, row))
+            except HTTPException:
+                raise
+            except Exception as e:
+                raise HTTPException(status_code=503, detail=f"DB error: {e}")
 
 
 @app.get("/extortion-types", response_model=list[TipoExtorsion])
-async def get_extortion_types():
-    sql = "SELECT id_extortion, name, description FROM public.extortion_type ORDER BY id_extortion"
-    with pool.connection() as conn:
-        try:
-            cur = conn.execute(sql)
-            cols = [desc[0] for desc in cur.description]
-            rows = cur.fetchall()
-            return [dict(zip(cols, row)) for row in rows]
-        except Exception as e:
-            raise HTTPException(status_code=503, detail=f"DB error: {e}")
+async def get_extortion_types(_: UsuarioActual = Depends(get_usuario_actual)):
+        sql = "SELECT id_extortion, name, description FROM public.extortion_type ORDER BY id_extortion"
+        with pool.connection() as conn:
+            try:
+                cur = conn.execute(sql)
+                cols = [desc[0] for desc in cur.description]
+                rows = cur.fetchall()
+                return [dict(zip(cols, row)) for row in rows]
+            except Exception as e:
+                raise HTTPException(status_code=503, detail=f"DB error: {e}")
