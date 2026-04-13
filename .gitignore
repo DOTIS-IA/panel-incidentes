@@ -1,6 +1,5 @@
 # ── Notas personales ──────────────────────────────────────────
 prompts.md
-CLAUDE.md
 
 # ── Python ────────────────────────────────────────────────────
 __pycache__/
@@ -44,3 +43,5 @@ build/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+backend/api/seed_user.py
