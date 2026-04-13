@@ -1,0 +1,88 @@
+.datepicker {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+  width: 260px;
+}
+
+.datepicker-range {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+}
+
+.datepicker-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.nav-btn {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 2px 8px;
+  border-radius: 4px;
+  line-height: 1;
+}
+
+.nav-btn:hover {
+  background: var(--bg-hover);
+  color: var(--color-primary);
+}
+
+.datepicker-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.day-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 4px 0;
+}
+
+.day-btn {
+  aspect-ratio: 1;
+  border: none;
+  background: transparent;
+  border-radius: 50%;
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.day-btn:hover {
+  background: var(--bg-hover);
+  color: var(--color-primary);
+}
+
+.day-btn.selected {
+  background: var(--color-primary);
+  color: #fff;
+  font-weight: 600;
+}
+
+.day-btn.in-range {
+  background: var(--color-primary-soft);
+  border-radius: 0;
+  color: var(--color-primary);
+}
