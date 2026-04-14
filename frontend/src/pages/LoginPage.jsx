@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+import { BASE_URL } from '../services/api';
 
 const LoginPage = () => {
   const [username, setUsername] = useState('');
@@ -9,14 +8,14 @@ const LoginPage = () => {
   const [error, setError]       = useState(null);
   const [loading, setLoading]   = useState(false);
 
-  const navigate = useNavigate(); // hook de react-router para redirigir
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
-    e.preventDefault(); // evita que el form recargue la página
+    e.preventDefault();
     setLoading(true);
     setError(null);
 
-    // El backend espera form-data, no JSON
+    // OAuth2 espera form-data, no JSON
     const formData = new FormData();
     formData.append('username', username);
     formData.append('password', password);
@@ -32,13 +31,11 @@ const LoginPage = () => {
         throw new Error(data.detail || 'Error al iniciar sesión');
       }
 
-      const data = await res.json(); // { access_token, token_type, role }
-
-      // Guardar el token — todos los fetches posteriores lo leerán de aquí
+      const data = await res.json();
       localStorage.setItem('token', data.access_token);
       localStorage.setItem('role', data.role);
 
-      navigate('/'); // redirigir al panel principal
+      navigate('/');
     } catch (err) {
       setError(err.message);
     } finally {

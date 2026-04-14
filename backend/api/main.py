@@ -99,7 +99,7 @@ app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5174"],  # origen del frontend React (Vite), cambiar en produccion por dominio
+    allow_origins=os.getenv("CORS_ORIGINS", "http://localhost:5173").split(","),
     allow_methods=["GET", "POST"],            # POST necesario para el login
     allow_headers=["*"],
 )
