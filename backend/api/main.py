@@ -60,7 +60,7 @@ class IncidenteItem(BaseModel):
 class TipoExtorsion(BaseModel):
     id_extortion: int
     name: str
-    description: str
+    description: str | None
 
 
 class TokenResponse(BaseModel):
@@ -83,6 +83,15 @@ CONNINFO = (
 )
 
 pool: psycopg_pool.ConnectionPool = None
+
+
+def _sql_normalize_text(field: str) -> str:
+    return (
+        "LOWER(TRANSLATE(COALESCE("
+        f"{field}, ''),"
+        "'ÁÀÄÂÉÈËÊÍÌÏÎÓÒÖÔÚÙÜÛÑáàäâéèëêíìïîóòöôúùüûñ',"
+        "'AAAAEEEEIIIIOOOOUUUUNaaaaeeeeiiiioooouuuun'))"
+    )
 
 
 @asynccontextmanager
@@ -178,10 +187,32 @@ async def health():
         except Exception as e:
             raise HTTPException(status_code=503, detail=f"DB error: {e}")
 
+
+@app.get("/extortion-types", response_model=list[TipoExtorsion])
+async def get_extortion_types(_: UsuarioActual = Depends(get_usuario_actual)):
+    sql = """
+        SELECT id_extortion, name, description
+        FROM public.extortion_type
+        ORDER BY name ASC
+    """
+    with pool.connection() as conn:
+        try:
+            cur = conn.execute(sql)
+            cols = [desc[0] for desc in cur.description]
+            rows = cur.fetchall()
+            return [dict(zip(cols, row)) for row in rows]
+        except Exception as e:
+            raise HTTPException(status_code=503, detail=f"DB error: {e}")
+
+
 @app.get("/data", response_model=list[IncidenteItem])
 async def get_data(
     fecha: Optional[str] = None,
-    tipo_extorsion: Optional[int] = None,
+    fecha_inicio: Optional[str] = None,
+    fecha_fin: Optional[str] = None,
+    hora: Optional[int] = None,
+    minutos: Optional[int] = None,
+    tipo_extorsion: Optional[str] = None,
     id_conv: Optional[str] = None,
     _: UsuarioActual = Depends(get_usuario_actual)
 ):
@@ -192,16 +223,48 @@ async def get_data(
         filters.append("event_ts::date = %(fecha)s")
         params["fecha"] = fecha
 
+    if fecha_inicio:
+        filters.append("event_ts::date >= %(fecha_inicio)s")
+        params["fecha_inicio"] = fecha_inicio
+
+    if fecha_fin:
+        filters.append("event_ts::date <= %(fecha_fin)s")
+        params["fecha_fin"] = fecha_fin
+
+    if hora is not None:
+        filters.append("EXTRACT(HOUR FROM event_ts) = %(hora)s")
+        params["hora"] = hora
+
+    if minutos is not None:
+        filters.append("EXTRACT(MINUTE FROM event_ts) = %(minutos)s")
+        params["minutos"] = minutos
+
     if tipo_extorsion:
-        filters.append("id_extortion = %(tipo_extorsion)s")
-        params["tipo_extorsion"] = tipo_extorsion
+        normalized_tipo_extorsion = tipo_extorsion.strip()
+        filters.append(
+            """
+            (
+                id_extortion::text = %(tipo_extorsion)s
+                OR {normalized_extortion_name} = {normalized_tipo_extorsion}
+            )
+            """.format(
+                normalized_extortion_name=_sql_normalize_text("extortion_name"),
+                normalized_tipo_extorsion=_sql_normalize_text("%(tipo_extorsion)s"),
+            )
+        )
+        params["tipo_extorsion"] = normalized_tipo_extorsion
 
     if id_conv:
         filters.append("id_conv_eleven = %(id_conv)s")
         params["id_conv"] = id_conv
 
     where = f"WHERE {' AND '.join(filters)}" if filters else ""
-    sql = f"SELECT * FROM analytics.vw_report_conversation_panel {where}"
+    sql = f"""
+        SELECT *
+        FROM analytics.vw_report_conversation_panel
+        {where}
+        ORDER BY event_ts DESC
+    """
 
     with pool.connection() as conn:
         try:
@@ -229,18 +292,5 @@ async def get_incidente(id_conv: str, _: UsuarioActual = Depends(get_usuario_act
                 return dict(zip(cols, row))
             except HTTPException:
                 raise
-            except Exception as e:
-                raise HTTPException(status_code=503, detail=f"DB error: {e}")
-
-
-@app.get("/extortion-types", response_model=list[TipoExtorsion])
-async def get_extortion_types(_: UsuarioActual = Depends(get_usuario_actual)):
-        sql = "SELECT id_extortion, name, description FROM public.extortion_type ORDER BY id_extortion"
-        with pool.connection() as conn:
-            try:
-                cur = conn.execute(sql)
-                cols = [desc[0] for desc in cur.description]
-                rows = cur.fetchall()
-                return [dict(zip(cols, row)) for row in rows]
             except Exception as e:
                 raise HTTPException(status_code=503, detail=f"DB error: {e}")
