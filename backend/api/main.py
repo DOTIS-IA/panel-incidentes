@@ -140,12 +140,13 @@ def get_usuario_actual(token: str = Depends(oauth2_scheme)) -> UsuarioActual:
 async def login(form: OAuth2PasswordRequestForm = Depends()):
     # 1. Buscar el usuario en la BD por username
     sql = "SELECT username, password_hash, role, is_active FROM public.users WHERE username = %(u)s"
-    with pool.connection() as conn:
-        try:
+    try:
+        with pool.connection() as conn:
             cur = conn.execute(sql, {"u": form.username})
             row = cur.fetchone()
-        except Exception as e:
-            raise HTTPException(status_code=503, detail=f"DB error: {e}")
+    except Exception as e:
+        print(f"[login] DB error: {e}")
+        raise HTTPException(status_code=503, detail=f"DB error: {e}")
 
     # 2. Si no existe el usuario → 401 (mismo mensaje que contraseña incorrecta,
     #    para no revelar si el username existe o no)
@@ -171,12 +172,13 @@ async def login(form: OAuth2PasswordRequestForm = Depends()):
 
 @app.get("/health")
 async def health():
-    with pool.connection() as conn:
-        try:
+    try:
+        with pool.connection() as conn:
             conn.execute("SELECT 1")
             return {"status": "ok", "db": "connected"}
-        except Exception as e:
-            raise HTTPException(status_code=503, detail=f"DB error: {e}")
+    except Exception as e:
+        print(f"[health] DB error: {e}")
+        raise HTTPException(status_code=503, detail=f"DB error: {e}")
 
 @app.get("/data", response_model=list[IncidenteItem])
 async def get_data(
@@ -203,14 +205,15 @@ async def get_data(
     where = f"WHERE {' AND '.join(filters)}" if filters else ""
     sql = f"SELECT * FROM analytics.vw_report_conversation_panel {where}"
 
-    with pool.connection() as conn:
-        try:
+    try:
+        with pool.connection() as conn:
             cur = conn.execute(sql, params)
             cols = [desc[0] for desc in cur.description]
             rows = cur.fetchall()
             return [dict(zip(cols, row)) for row in rows]
-        except Exception as e:
-            raise HTTPException(status_code=503, detail=f"DB error: {e}")
+    except Exception as e:
+        print(f"[get_data] DB error: {e}")
+        raise HTTPException(status_code=503, detail=f"DB error: {e}")
 
 
 @app.get("/data/{id_conv}", response_model=IncidenteItem)
@@ -219,28 +222,30 @@ async def get_incidente(id_conv: str, _: UsuarioActual = Depends(get_usuario_act
             SELECT * FROM analytics.vw_report_conversation_panel
             WHERE id_conv_eleven = %(id_conv)s
         """
-        with pool.connection() as conn:
-            try:
+        try:
+            with pool.connection() as conn:
                 cur = conn.execute(sql, {"id_conv": id_conv})
                 cols = [desc[0] for desc in cur.description]
                 row = cur.fetchone()
                 if row is None:
                     raise HTTPException(status_code=404, detail="Incidente no encontrado")
                 return dict(zip(cols, row))
-            except HTTPException:
-                raise
-            except Exception as e:
-                raise HTTPException(status_code=503, detail=f"DB error: {e}")
+        except HTTPException:
+            raise
+        except Exception as e:
+            print(f"[get_incidente] DB error: {e}")
+            raise HTTPException(status_code=503, detail=f"DB error: {e}")
 
 
 @app.get("/extortion-types", response_model=list[TipoExtorsion])
 async def get_extortion_types(_: UsuarioActual = Depends(get_usuario_actual)):
         sql = "SELECT id_extortion, name, description FROM public.extortion_type ORDER BY id_extortion"
-        with pool.connection() as conn:
-            try:
+        try:
+            with pool.connection() as conn:
                 cur = conn.execute(sql)
                 cols = [desc[0] for desc in cur.description]
                 rows = cur.fetchall()
                 return [dict(zip(cols, row)) for row in rows]
-            except Exception as e:
-                raise HTTPException(status_code=503, detail=f"DB error: {e}")
+        except Exception as e:
+            print(f"[get_extortion_types] DB error: {e}")
+            raise HTTPException(status_code=503, detail=f"DB error: {e}")
