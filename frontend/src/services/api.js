@@ -48,12 +48,16 @@ export const incidentesService = {
   getAll: async (filtros = {}) => {
     const params = new URLSearchParams();
 
-    if (filtros.fechaInicio) params.append('fecha_inicio', filtros.fechaInicio);
-    if (filtros.fechaFin) params.append('fecha_fin', filtros.fechaFin);
-    if (filtros.hora) params.append('hora', filtros.hora);
-    if (filtros.minutos) params.append('minutos', filtros.minutos);
-    if (filtros.id) params.append('id_conv', filtros.id);
-    if (filtros.tipoExtorsion) params.append('tipo_extorsion', filtros.tipoExtorsion);
+    if (filtros.id) {
+      // Búsqueda por ID exacto — ignorar todos los demás filtros
+      params.append('id_conv', filtros.id);
+    } else {
+      if (filtros.fechaInicio) params.append('fecha_inicio', filtros.fechaInicio);
+      if (filtros.fechaFin) params.append('fecha_fin', filtros.fechaFin);
+      if (filtros.hora) params.append('hora', filtros.hora);
+      if (filtros.minutos) params.append('minutos', filtros.minutos);
+      if (filtros.tipoExtorsion) params.append('tipo_extorsion', filtros.tipoExtorsion);
+    }
 
     const query = params.toString();
     const res = await fetch(`${BASE_URL}/data${query ? `?${query}` : ''}`, {

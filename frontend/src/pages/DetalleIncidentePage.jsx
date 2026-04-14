@@ -158,10 +158,29 @@ const DetalleIncidentePage = () => {
           >
             Transcripción {transcripcionAbierta ? '▲' : '▼'}
           </button>
+
           {transcripcionAbierta && (
-            <pre className="detalle-transcripcion">
-              {JSON.stringify(i.transcription, null, 2)}
-            </pre>
+            Array.isArray(i.transcription) ? (
+              <div className="transcripcion-dialogo">
+                {i.transcription.map((turno, idx) => {
+                  const esAgente = turno.role === 'agent';
+                  const mins = Math.floor((turno.time_in_call_secs ?? 0) / 60);
+                  const secs = String((turno.time_in_call_secs ?? 0) % 60).padStart(2, '0');
+                  const tiempo = `${mins}:${secs}`;
+                  return (
+                    <div key={idx} className={`turno ${esAgente ? 'turno-agente' : 'turno-usuario'}`}>
+                      <span className="turno-hablante">{esAgente ? 'Agente' : 'Víctima'}</span>
+                      <p className="turno-mensaje">{turno.message}</p>
+                      <span className="turno-tiempo">{tiempo}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <pre className="detalle-transcripcion">
+                {JSON.stringify(i.transcription, null, 2)}
+              </pre>
+            )
           )}
         </section>
       )}
