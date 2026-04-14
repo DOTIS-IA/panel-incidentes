@@ -7,13 +7,6 @@ const authHeaders = () => ({
   'Authorization': `Bearer ${localStorage.getItem('token')}`,
 });
 
-const normalizeText = (value) =>
-  String(value || '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .trim();
-
 const handleResponse = async (res) => {
   if (!res.ok) {
     const error = await res.json().catch(() => ({ detail: 'Error desconocido' }));
@@ -22,43 +15,16 @@ const handleResponse = async (res) => {
   return res.json();
 };
 
-const filterByDateRange = (items, fechaInicio, fechaFin) => {
-  if (!fechaInicio && !fechaFin) return items;
-
-  return items.filter((item) => {
-    const sourceDate = String(item.event_ts || '').slice(0, 10);
-    if (!sourceDate) return false;
-    if (fechaInicio && sourceDate < fechaInicio) return false;
-    if (fechaFin && sourceDate > fechaFin) return false;
-    return true;
-  });
-};
-
-const filterByHour = (items, hora) => {
-  if (!hora) return items;
-  return items.filter((item) => {
-    const eventDate = item.event_ts ? new Date(item.event_ts) : null;
-    if (!eventDate || Number.isNaN(eventDate.getTime())) return false;
-    return String(eventDate.getHours()).padStart(2, '0') === hora;
-  });
-};
-
-const filterByType = (items, tipoExtorsion) => {
-  if (!tipoExtorsion) return items;
-  const normalized = normalizeText(tipoExtorsion);
-  return items.filter((item) => {
-    const extortionName = normalizeText(item.extortion_name);
-    const extortionId = String(item.id_extortion || '');
-    return extortionName === normalized || extortionId === String(tipoExtorsion);
-  });
-};
-
 export const incidentesService = {
   getAll: async (filtros = {}) => {
     const params = new URLSearchParams();
 
-    if (filtros.fechaInicio) params.append('fecha', filtros.fechaInicio);
+    if (filtros.fechaInicio) params.append('fecha_inicio', filtros.fechaInicio);
+    if (filtros.fechaFin) params.append('fecha_fin', filtros.fechaFin);
+    if (filtros.hora) params.append('hora', filtros.hora);
+    if (filtros.minutos) params.append('minutos', filtros.minutos);
     if (filtros.id) params.append('id_conv', filtros.id);
+    if (filtros.tipoExtorsion) params.append('tipo_extorsion', filtros.tipoExtorsion);
 
     const query = params.toString();
     const res = await fetch(`${BASE_URL}/data${query ? `?${query}` : ''}`, {
@@ -66,11 +32,7 @@ export const incidentesService = {
       headers: authHeaders(),
     });
 
-    const data = await handleResponse(res);
-    return filterByType(
-      filterByHour(filterByDateRange(data, filtros.fechaInicio, filtros.fechaFin), filtros.hora),
-      filtros.tipoExtorsion,
-    );
+    return handleResponse(res);
   },
 
   getById: async (id) => {
@@ -78,6 +40,12 @@ export const incidentesService = {
       headers: authHeaders(),
     });
     return handleResponse(res);
+  },
+
+  getTiposExtorsion: async () => {
+    const res = await fetch(`${BASE_URL}/extortion-types`);
+    const data = await handleResponse(res);
+    return Array.isArray(data) ? data.map((item) => item.name).filter(Boolean) : [];
   },
 
   generar: async (filtros) => incidentesService.getAll(filtros),
