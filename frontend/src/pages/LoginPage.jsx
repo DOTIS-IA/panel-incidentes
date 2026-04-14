@@ -34,6 +34,7 @@ const LoginPage = () => {
       const data = await res.json();
       localStorage.setItem('token', data.access_token);
       localStorage.setItem('role', data.role);
+      localStorage.setItem('username', username);
 
       navigate('/');
     } catch (err) {
