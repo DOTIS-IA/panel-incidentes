@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
+import { Routes, Route } from 'react-router-dom';
 import Sidebar from './components/Sidebar/Sidebar';
 import FiltrosPage from './pages/FiltrosPage';
+import LoginPage from './pages/LoginPage';
+import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
 
 function App() {
@@ -14,20 +17,30 @@ function App() {
   const toggleTema = () => setTema(t => t === 'dark' ? 'light' : 'dark');
 
   return (
-    <div className="app-layout">
-      <Sidebar
-        vistaActiva={vista}
-        onChangeVista={setVista}
-        archivos={[]}
-        tema={tema}
-        onToggleTema={toggleTema}
-      />
-      <main className="app-main">
-        {vista === 'vistas'     && <FiltrosPage />}
-        {vista === 'inicio'     && <div style={{padding:40}}>Inicio — en construcción</div>}
-        {vista === 'explorador' && <div style={{padding:40}}>Explorador — en construcción</div>}
-      </main>
-    </div>
+    <Routes>
+      {/* Ruta pública — no requiere token */}
+      <Route path="/login" element={<LoginPage />} />
+
+      {/* Ruta protegida — redirige a /login si no hay token */}
+      <Route path="/" element={
+        <ProtectedRoute>
+          <div className="app-layout">
+            <Sidebar
+              vistaActiva={vista}
+              onChangeVista={setVista}
+              archivos={[]}
+              tema={tema}
+              onToggleTema={toggleTema}
+            />
+            <main className="app-main">
+              {vista === 'vistas'     && <FiltrosPage />}
+              {vista === 'inicio'     && <div style={{padding:40}}>Inicio — en construcción</div>}
+              {vista === 'explorador' && <div style={{padding:40}}>Explorador — en construcción</div>}
+            </main>
+          </div>
+        </ProtectedRoute>
+      } />
+    </Routes>
   );
 }
 

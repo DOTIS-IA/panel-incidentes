@@ -3,6 +3,17 @@ import './Sidebar.css';
 
 const Sidebar = ({ archivos = [], vistaActiva = 'vistas', onChangeVista, tema, onToggleTema }) => {
   const [carpeta, setCarpeta] = useState('Archivos');
+  const role = localStorage.getItem('role') || '—';
+  let username = localStorage.getItem('username');
+  if (!username) {
+    try {
+      const token = localStorage.getItem('token');
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      username = payload.sub || '—';
+    } catch {
+      username = '—';
+    }
+  }
 
   return (
     <aside className="sidebar">
@@ -88,10 +99,10 @@ const Sidebar = ({ archivos = [], vistaActiva = 'vistas', onChangeVista, tema, o
 
       {/* Usuario */}
       <div className="sidebar-user">
-        <div className="user-avatar">A</div>
+        <div className="user-avatar">{username[0].toUpperCase()}</div>
         <div className="user-info">
-          <span className="user-name">admin</span>
-          <span className="user-email">company@example.com</span>
+          <span className="user-name">{username}</span>
+          <span className="user-email">{role}</span>
         </div>
       </div>
     </aside>
