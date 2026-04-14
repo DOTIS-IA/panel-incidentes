@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BASE_URL } from '../services/api';
 
@@ -10,11 +10,14 @@ const LoginPage = () => {
 
   const navigate = useNavigate();
 
+  useEffect(() => {
+    if (localStorage.getItem('token')) navigate('/', { replace: true });
+  }, [navigate]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-
     // OAuth2 espera form-data, no JSON
     const formData = new FormData();
     formData.append('username', username);
