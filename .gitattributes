@@ -1,0 +1,15 @@
+# Forzar LF en todos los archivos de texto
+* text=auto
+
+# Scripts de shell siempre con LF (se rompen con CRLF en contenedores Linux)
+*.sh text eol=lf
+
+# SQL también con LF
+*.sql text eol=lf
+
+# Archivos de configuración
+*.env text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.json text eol=lf
+*.md text eol=lf
