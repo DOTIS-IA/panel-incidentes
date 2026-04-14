@@ -43,7 +43,9 @@ export const incidentesService = {
   },
 
   getTiposExtorsion: async () => {
-    const res = await fetch(`${BASE_URL}/extortion-types`);
+    const res = await fetch(`${BASE_URL}/extortion-types`, {
+      headers: authHeaders(),
+    });
     const data = await handleResponse(res);
     return Array.isArray(data) ? data.map((item) => item.name).filter(Boolean) : [];
   },
