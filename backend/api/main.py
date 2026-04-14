@@ -60,7 +60,7 @@ class IncidenteItem(BaseModel):
 class TipoExtorsion(BaseModel):
     id_extortion: int
     name: str
-    description: str
+    description: str | None
 
 
 class TokenResponse(BaseModel):
@@ -74,6 +74,21 @@ class UsuarioActual(BaseModel):
     role: str
 
 
+class UsuarioCreate(BaseModel):
+    username: str
+    password: str
+    email: str
+    role: str = "operativo"
+
+
+class UsuarioResponse(BaseModel):
+    id: int
+    username: str
+    email: str
+    role: str
+    is_active: bool
+
+
 CONNINFO = (
     f"host={os.getenv('DB_HOST', 'localhost')} "
     f"port={os.getenv('DB_PORT', 5432)} "
@@ -83,6 +98,15 @@ CONNINFO = (
 )
 
 pool: psycopg_pool.ConnectionPool = None
+
+
+def _sql_normalize_text(field: str) -> str:
+    return (
+        "LOWER(TRANSLATE(COALESCE("
+        f"{field}, ''),"
+        "'ÁÀÄÂÉÈËÊÍÌÏÎÓÒÖÔÚÙÜÛÑáàäâéèëêíìïîóòöôúùüûñ',"
+        "'AAAAEEEEIIIIOOOOUUUUNaaaaeeeeiiiioooouuuun'))"
+    )
 
 
 @asynccontextmanager
@@ -99,7 +123,7 @@ app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],  # origen del frontend React (Vite), cambiar en produccion por dominio
+    allow_origins=os.getenv("CORS_ORIGINS", "http://localhost:5173").split(","),
     allow_methods=["GET", "POST"],            # POST necesario para el login
     allow_headers=["*"],
 )
@@ -133,6 +157,12 @@ def get_usuario_actual(token: str = Depends(oauth2_scheme)) -> UsuarioActual:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token inválido o expirado")
 
 
+def require_admin(usuario: UsuarioActual = Depends(get_usuario_actual)) -> UsuarioActual:
+    if usuario.role != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Se requiere rol admin")
+    return usuario
+
+
 # ── Endpoint: POST /auth/login ───────────────────────────────────────────────
 # OAuth2PasswordRequestForm lee automáticamente username y password del body
 # React lo llama con: fetch("/auth/login", { method: "POST", body: formData })
@@ -140,12 +170,13 @@ def get_usuario_actual(token: str = Depends(oauth2_scheme)) -> UsuarioActual:
 async def login(form: OAuth2PasswordRequestForm = Depends()):
     # 1. Buscar el usuario en la BD por username
     sql = "SELECT username, password_hash, role, is_active FROM public.users WHERE username = %(u)s"
-    with pool.connection() as conn:
-        try:
+    try:
+        with pool.connection() as conn:
             cur = conn.execute(sql, {"u": form.username})
             row = cur.fetchone()
-        except Exception as e:
-            raise HTTPException(status_code=503, detail=f"DB error: {e}")
+    except Exception as e:
+        print(f"[login] DB error: {e}")
+        raise HTTPException(status_code=503, detail=f"DB error: {e}")
 
     # 2. Si no existe el usuario → 401 (mismo mensaje que contraseña incorrecta,
     #    para no revelar si el username existe o no)
@@ -169,19 +200,74 @@ async def login(form: OAuth2PasswordRequestForm = Depends()):
     return TokenResponse(access_token=token, token_type="bearer", role=role)
 
 
+@app.post("/users", response_model=UsuarioResponse, status_code=status.HTTP_201_CREATED)
+async def create_user(user: UsuarioCreate, _: UsuarioActual = Depends(require_admin)):
+    if user.role not in {"admin", "monitor", "operativo"}:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Rol inválido")
+
+    password_hash = bcrypt.hashpw(user.password.encode(), bcrypt.gensalt()).decode()
+    sql = """
+        INSERT INTO public.users (username, password_hash, email, role)
+        VALUES (%(username)s, %(password_hash)s, %(email)s, %(role)s)
+        RETURNING id, username, email, role, is_active
+    """
+    params = {
+        "username": user.username,
+        "password_hash": password_hash,
+        "email": user.email,
+        "role": user.role,
+    }
+
+    try:
+        with pool.connection() as conn:
+            cur = conn.execute(sql, params)
+            row = cur.fetchone()
+            conn.commit()
+            cols = [desc[0] for desc in cur.description]
+            return dict(zip(cols, row))
+    except psycopg.errors.UniqueViolation:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="El usuario o correo ya existe")
+    except Exception as e:
+        print(f"[create_user] DB error: {e}")
+        raise HTTPException(status_code=503, detail=f"DB error: {e}")
+
+
 @app.get("/health")
 async def health():
-    with pool.connection() as conn:
-        try:
+    try:
+        with pool.connection() as conn:
             conn.execute("SELECT 1")
             return {"status": "ok", "db": "connected"}
+    except Exception as e:
+        print(f"[health] DB error: {e}")
+        raise HTTPException(status_code=503, detail=f"DB error: {e}")
+
+
+@app.get("/extortion-types", response_model=list[TipoExtorsion])
+async def get_extortion_types(_: UsuarioActual = Depends(get_usuario_actual)):
+    sql = """
+        SELECT id_extortion, name, description
+        FROM public.extortion_type
+        ORDER BY name ASC
+    """
+    with pool.connection() as conn:
+        try:
+            cur = conn.execute(sql)
+            cols = [desc[0] for desc in cur.description]
+            rows = cur.fetchall()
+            return [dict(zip(cols, row)) for row in rows]
         except Exception as e:
             raise HTTPException(status_code=503, detail=f"DB error: {e}")
+
 
 @app.get("/data", response_model=list[IncidenteItem])
 async def get_data(
     fecha: Optional[str] = None,
-    tipo_extorsion: Optional[int] = None,
+    fecha_inicio: Optional[str] = None,
+    fecha_fin: Optional[str] = None,
+    hora: Optional[int] = None,
+    minutos: Optional[int] = None,
+    tipo_extorsion: Optional[str] = None,
     id_conv: Optional[str] = None,
     _: UsuarioActual = Depends(get_usuario_actual)
 ):
@@ -192,25 +278,58 @@ async def get_data(
         filters.append("event_ts::date = %(fecha)s")
         params["fecha"] = fecha
 
+    if fecha_inicio:
+        filters.append("event_ts::date >= %(fecha_inicio)s")
+        params["fecha_inicio"] = fecha_inicio
+
+    if fecha_fin:
+        filters.append("event_ts::date <= %(fecha_fin)s")
+        params["fecha_fin"] = fecha_fin
+
+    if hora is not None:
+        filters.append("EXTRACT(HOUR FROM event_ts) = %(hora)s")
+        params["hora"] = hora
+
+    if minutos is not None:
+        filters.append("EXTRACT(MINUTE FROM event_ts) = %(minutos)s")
+        params["minutos"] = minutos
+
     if tipo_extorsion:
-        filters.append("id_extortion = %(tipo_extorsion)s")
-        params["tipo_extorsion"] = tipo_extorsion
+        normalized_tipo_extorsion = tipo_extorsion.strip()
+        filters.append(
+            """
+            (
+                id_extortion::text = %(tipo_extorsion)s
+                OR {normalized_extortion_name} = {normalized_tipo_extorsion}
+            )
+            """.format(
+                normalized_extortion_name=_sql_normalize_text("extortion_name"),
+                normalized_tipo_extorsion=_sql_normalize_text("%(tipo_extorsion)s"),
+            )
+        )
+        params["tipo_extorsion"] = normalized_tipo_extorsion
 
     if id_conv:
         filters.append("id_conv_eleven = %(id_conv)s")
         params["id_conv"] = id_conv
 
     where = f"WHERE {' AND '.join(filters)}" if filters else ""
-    sql = f"SELECT * FROM analytics.vw_report_conversation_panel {where}"
+    sql = f"""
+        SELECT *
+        FROM analytics.vw_report_conversation_panel
+        {where}
+        ORDER BY event_ts DESC
+    """
 
-    with pool.connection() as conn:
-        try:
+    try:
+        with pool.connection() as conn:
             cur = conn.execute(sql, params)
             cols = [desc[0] for desc in cur.description]
             rows = cur.fetchall()
             return [dict(zip(cols, row)) for row in rows]
-        except Exception as e:
-            raise HTTPException(status_code=503, detail=f"DB error: {e}")
+    except Exception as e:
+        print(f"[get_data] DB error: {e}")
+        raise HTTPException(status_code=503, detail=f"DB error: {e}")
 
 
 @app.get("/data/{id_conv}", response_model=IncidenteItem)
@@ -219,28 +338,16 @@ async def get_incidente(id_conv: str, _: UsuarioActual = Depends(get_usuario_act
             SELECT * FROM analytics.vw_report_conversation_panel
             WHERE id_conv_eleven = %(id_conv)s
         """
-        with pool.connection() as conn:
-            try:
+        try:
+            with pool.connection() as conn:
                 cur = conn.execute(sql, {"id_conv": id_conv})
                 cols = [desc[0] for desc in cur.description]
                 row = cur.fetchone()
                 if row is None:
                     raise HTTPException(status_code=404, detail="Incidente no encontrado")
                 return dict(zip(cols, row))
-            except HTTPException:
-                raise
-            except Exception as e:
-                raise HTTPException(status_code=503, detail=f"DB error: {e}")
-
-
-@app.get("/extortion-types", response_model=list[TipoExtorsion])
-async def get_extortion_types(_: UsuarioActual = Depends(get_usuario_actual)):
-        sql = "SELECT id_extortion, name, description FROM public.extortion_type ORDER BY id_extortion"
-        with pool.connection() as conn:
-            try:
-                cur = conn.execute(sql)
-                cols = [desc[0] for desc in cur.description]
-                rows = cur.fetchall()
-                return [dict(zip(cols, row)) for row in rows]
-            except Exception as e:
-                raise HTTPException(status_code=503, detail=f"DB error: {e}")
+        except HTTPException:
+            raise
+        except Exception as e:
+            print(f"[get_incidente] DB error: {e}")
+            raise HTTPException(status_code=503, detail=f"DB error: {e}")

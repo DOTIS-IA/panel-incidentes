@@ -1,11 +1,40 @@
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+export const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
-const normalizeText = (value) =>
-  String(value || '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .trim();
+const FALLBACK_TIPOS_EXTORSION = [
+  'Extorsión presencial-exigencia de pago o bienes (Directa)',
+  'Extorsión por secuestro virtual',
+  'Extorsión telefónica-virtual-exigencia de pago o bienes (Indirecta)',
+  'Extorsión escrita-otros medios exigencia de pago o bienes (Indirecta)',
+  'Fraude-engaño telefónico-virtual',
+  'Denuncia de localización y operación del probable extorsionador o grupo delictivo',
+  'Extorsión por invasión-despojo de predio',
+  'Extorsión por contenido sexual o íntimo',
+];
+
+const getToken = () => {
+  if (typeof window === 'undefined') return null;
+
+  const candidates = [
+    window.localStorage.getItem('access_token'),
+    window.localStorage.getItem('token'),
+    window.localStorage.getItem('authToken'),
+    window.sessionStorage.getItem('access_token'),
+    window.sessionStorage.getItem('token'),
+    window.sessionStorage.getItem('authToken'),
+  ];
+
+  return candidates.find((value) => value && String(value).trim()) || null;
+};
+
+const buildHeaders = (extraHeaders = {}) => {
+  const token = getToken();
+
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...extraHeaders,
+  };
+};
 
 const handleResponse = async (res) => {
   if (!res.ok) {
@@ -15,60 +44,44 @@ const handleResponse = async (res) => {
   return res.json();
 };
 
-const filterByDateRange = (items, fechaInicio, fechaFin) => {
-  if (!fechaInicio && !fechaFin) return items;
-
-  return items.filter((item) => {
-    const sourceDate = String(item.event_ts || '').slice(0, 10);
-    if (!sourceDate) return false;
-    if (fechaInicio && sourceDate < fechaInicio) return false;
-    if (fechaFin && sourceDate > fechaFin) return false;
-    return true;
-  });
-};
-
-const filterByHour = (items, hora) => {
-  if (!hora) return items;
-  return items.filter((item) => {
-    const eventDate = item.event_ts ? new Date(item.event_ts) : null;
-    if (!eventDate || Number.isNaN(eventDate.getTime())) return false;
-    return String(eventDate.getHours()).padStart(2, '0') === hora;
-  });
-};
-
-const filterByType = (items, tipoExtorsion) => {
-  if (!tipoExtorsion) return items;
-  const normalized = normalizeText(tipoExtorsion);
-  return items.filter((item) => {
-    const extortionName = normalizeText(item.extortion_name);
-    const extortionId = String(item.id_extortion || '');
-    return extortionName === normalized || extortionId === String(tipoExtorsion);
-  });
-};
-
 export const incidentesService = {
   getAll: async (filtros = {}) => {
     const params = new URLSearchParams();
 
-    if (filtros.fechaInicio) params.append('fecha', filtros.fechaInicio);
+    if (filtros.fechaInicio) params.append('fecha_inicio', filtros.fechaInicio);
+    if (filtros.fechaFin) params.append('fecha_fin', filtros.fechaFin);
+    if (filtros.hora) params.append('hora', filtros.hora);
+    if (filtros.minutos) params.append('minutos', filtros.minutos);
     if (filtros.id) params.append('id_conv', filtros.id);
+    if (filtros.tipoExtorsion) params.append('tipo_extorsion', filtros.tipoExtorsion);
 
     const query = params.toString();
     const res = await fetch(`${BASE_URL}/data${query ? `?${query}` : ''}`, {
       method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
+      headers: buildHeaders(),
     });
 
-    const data = await handleResponse(res);
-    return filterByType(
-      filterByHour(filterByDateRange(data, filtros.fechaInicio, filtros.fechaFin), filtros.hora),
-      filtros.tipoExtorsion,
-    );
+    return handleResponse(res);
   },
 
   getById: async (id) => {
-    const res = await fetch(`${BASE_URL}/data/${id}`);
+    const res = await fetch(`${BASE_URL}/data/${id}`, {
+      headers: buildHeaders(),
+    });
     return handleResponse(res);
+  },
+
+  getTiposExtorsion: async () => {
+    try {
+      const res = await fetch(`${BASE_URL}/extortion-types`, {
+        headers: buildHeaders(),
+      });
+      const data = await handleResponse(res);
+      const tipos = Array.isArray(data) ? data.map((item) => item.name).filter(Boolean) : [];
+      return tipos.length > 0 ? tipos : FALLBACK_TIPOS_EXTORSION;
+    } catch {
+      return FALLBACK_TIPOS_EXTORSION;
+    }
   },
 
   generar: async (filtros) => incidentesService.getAll(filtros),
