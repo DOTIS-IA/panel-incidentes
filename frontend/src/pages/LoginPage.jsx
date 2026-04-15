@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BASE_URL } from '../services/api';
+import './LoginPage.css';
 
 const LoginPage = () => {
   const [username, setUsername] = useState('');
@@ -15,7 +16,6 @@ const LoginPage = () => {
     setLoading(true);
     setError(null);
 
-    // OAuth2 espera form-data, no JSON
     const formData = new FormData();
     formData.append('username', username);
     formData.append('password', password);
@@ -44,36 +44,64 @@ const LoginPage = () => {
   };
 
   return (
-    <div>
-      <h1>Iniciar sesión</h1>
+    <div className="app-layout">
+      <main className="split-container">
+        
+        <section className="hero-column">
+          <div className="hero-content">
+            <h2 className="hero-title">Plataforma de Incidentes</h2>
+            <p className="hero-description">
+              Un visor integral para analizar incidentes de seguridad y visualizar la actividad de datos críticos.
+            </p>
+          </div>
+        </section>
 
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>Usuario</label>
-          <input
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            required
-          />
-        </div>
+        <section className="login-column">
+          <div className="login-card">
+            <div className="login-header">
+              <h1 className="login-title">Iniciar sesión</h1>
+              <p className="login-subtitle">Acceso a la Plataforma Centralizada de Reportes e Incidentes.</p>
+            </div>
 
-        <div>
-          <label>Contraseña</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </div>
+            <form className="login-form" onSubmit={handleSubmit}>
+              <div className="login-group">
+                <label className="login-label">Usuario</label>
+                <input
+                  type="text"
+                  className="login-input"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="Ingresa tu usuario"
+                  required
+                />
+              </div>
 
-        {error && <p style={{ color: 'red' }}>{error}</p>}
+              <div className="login-group">
+                <label className="login-label">Contraseña</label>
+                <input
+                  type="password"
+                  className="login-input"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                />
+              </div>
 
-        <button type="submit" disabled={loading}>
-          {loading ? 'Entrando...' : 'Entrar'}
-        </button>
-      </form>
+              {error && <div className="login-error">{error}</div>}
+
+              <button type="submit" className="login-btn" disabled={loading}>
+                {loading ? 'Entrando...' : 'Entrar'}
+              </button>
+            </form>
+          </div>
+        </section>
+
+      </main>
+
+      <footer className="bottom-bar">
+        <p>© 2026 Plataforma Centralizada. Todos los derechos reservados.</p>
+      </footer>
     </div>
   );
 };

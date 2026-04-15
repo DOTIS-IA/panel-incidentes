@@ -1,0 +1,208 @@
+:root {
+  --bg-main: #0F0F11;
+  --bg-surface: #18181B;
+  --bg-surface-hover: #27272A;
+  --border: #3F3F46;
+  --text-primary: #F4F4F5;
+  --text-muted: #A1A1AA;
+  --color-primary: #E11D48;
+  --color-primary-hover: #BE123C;
+}
+
+/* --- Global Layout --- */
+.app-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: var(--bg-main);
+  color: var(--text-primary);
+  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* --- Split View Container --- */
+.split-container {
+  display: flex;
+  flex: 1;
+  width: 100%;
+}
+
+/* --- Left Column: Hero/Visual --- */
+.hero-column {
+  flex: 1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 60px;
+  background: radial-gradient(circle at center, #1a1a24 0%, var(--bg-main) 100%);
+  overflow: hidden;
+  z-index: 1;
+}
+
+.hero-column::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-image: 
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 30px 30px;
+  pointer-events: none;
+}
+
+.hero-content {
+  position: relative;
+  z-index: 10;
+  max-width: 600px;
+  text-align: center;
+}
+
+.hero-title {
+  font-size: 42px;
+  font-weight: 800;
+  line-height: 1.2;
+  margin-bottom: 24px;
+  background: linear-gradient(to right, #fff, #a1a1aa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.hero-description {
+  font-size: 18px;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+/* --- Right Column: Login Form --- */
+.login-column {
+  flex: 0 0 500px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+  background-color: var(--bg-main);
+  border-left: 1px solid var(--border);
+  box-sizing: border-box;
+  position: relative;
+  z-index: 10;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 400px;
+}
+
+.login-header { margin-bottom: 32px; }
+
+.login-title {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0 0 12px 0;
+}
+
+.login-subtitle {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.login-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.login-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.login-input {
+  width: 100%;
+  padding: 14px 16px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+}
+
+.login-input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 1px rgba(225, 29, 29, 0.3);
+}
+
+.login-btn {
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  padding: 16px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-top: 12px;
+}
+
+.login-btn:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+  transform: translateY(-1px);
+}
+
+.login-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.login-error {
+  color: #EF4444;
+  font-size: 13px;
+  background: #2A0000;
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+/* --- Footer --- */
+.bottom-bar {
+  padding: 16px 32px;
+  border-top: 1px solid var(--border);
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* --- Responsive --- */
+@media (max-width: 960px) {
+  .split-container {
+    flex-direction: column;
+  }
+
+  .login-column {
+    flex: 1;
+    width: 100%;
+    border-left: none;
+    border-bottom: 1px solid var(--border);
+    padding: 32px 16px;
+  }
+
+  .hero-column {
+    display: none;
+  }
+}
