@@ -89,8 +89,8 @@ const FiltrosPage = () => {
       </div>
 
       <div className="filtros-body">
-        <div className="filtros-row">
-          <div className="filtros-group">
+        <div className="filtros-top-grid">
+          <div className="filtros-group filtros-panel-card">
             <label className="group-label">Seleccionar hora</label>
             <TimePicker
               hora={filtros.hora}
@@ -100,7 +100,7 @@ const FiltrosPage = () => {
             />
           </div>
 
-          <div className="filtros-group filtros-group-date">
+          <div className="filtros-group filtros-group-date filtros-panel-card">
             <label className="group-label">Fecha</label>
             <DateRangePicker
               fechaInicio={filtros.fechaInicio}
@@ -110,9 +110,14 @@ const FiltrosPage = () => {
             />
           </div>
 
-          <div className="filtros-group filtros-group-id">
+          <div className="filtros-group filtros-group-id filtros-panel-card">
             <label className="group-label">ID</label>
             <div className="id-badge">{filtros.id || 'Todos'}</div>
+            <p className="id-helper">
+              {filtros.id
+                ? 'La búsqueda priorizará el identificador capturado arriba.'
+                : 'Sin un ID específico, la consulta revisa todos los incidentes.'}
+            </p>
           </div>
         </div>
 

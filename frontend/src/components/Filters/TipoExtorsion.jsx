@@ -9,9 +9,14 @@ import './TipoExtorsion.css';
 // =============================================
 
 const TIPOS_DEFAULT = [
-  'Extorsion presencial',
-  'Extorsion por secuestro virtual',
-  'Extorsion telefonica o virtual',
+  'Extorsión presencial-exigencia de pago o bienes (Directa)',
+  'Extorsión por secuestro virtual',
+  'Extorsión telefónica-virtual-exigencia de pago o bienes (Indirecta)',
+  'Extorsión escrita-otros medios exigencia de pago o bienes (Indirecta)',
+  'Fraude-engaño telefónico-virtual',
+  'Denuncia de localización y operación del probable extorsionador o grupo delictivo',
+  'Extorsión por invasión-despojo de predio',
+  'Extorsión por contenido sexual o íntimo',
 ];
 
 const TipoExtorsion = ({ tipos = TIPOS_DEFAULT, seleccionado, onSelect }) => {
@@ -27,6 +32,7 @@ const TipoExtorsion = ({ tipos = TIPOS_DEFAULT, seleccionado, onSelect }) => {
             type="button"
             className={`tipo-btn ${seleccionado === tipo ? 'selected' : ''}`}
             onClick={() => onSelect?.(tipo === seleccionado ? null : tipo)}
+            title={tipo}
           >
             {tipo}
           </button>
