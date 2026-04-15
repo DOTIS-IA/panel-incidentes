@@ -122,14 +122,26 @@ const FiltrosPage = () => {
             </p>
           </div>
         </div>
-
+      {/*Menú desplegable*/}
         <div className="filtros-row">
-          <TipoExtorsion
-            tipos={tiposExtorsion}
-            seleccionado={filtros.tipoExtorsion}
-            onSelect={(tipo) => set('tipoExtorsion', tipo)}
-          />
+          <div className="filtros-group filtros-panel-card" style={{ width: '100%' }}>
+            <label className="group-label">Tipo de extorsión</label>
+            <select
+              className="buscar-input" 
+              value={filtros.tipoExtorsion || ''}
+              onChange={(e) => set('tipoExtorsion', e.target.value)}
+              style={{ width: '100%', marginTop: '8px', cursor: 'pointer', backgroundColor: 'var(--bg-surface)' }}
+            >
+              <option value="">-- Todos los tipos --</option>
+              {tiposExtorsion.map((tipo, index) => (
+                <option key={index} value={tipo}>
+                  {tipo}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
+      {/*Fin-Menú desplegable*/}
 
         {error && <p className="filtros-error">Aviso: {error}</p>}
       </div>
