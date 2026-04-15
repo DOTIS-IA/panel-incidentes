@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Sidebar from './components/Sidebar/Sidebar';
 import FiltrosPage from './pages/FiltrosPage';
+import DetalleIncidentePage from './pages/DetalleIncidentePage';
 import LoginPage from './pages/LoginPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
@@ -36,6 +37,22 @@ function App() {
               {vista === 'vistas'     && <FiltrosPage />}
               {vista === 'inicio'     && <div style={{padding:40}}>Inicio — en construcción</div>}
               {vista === 'explorador' && <div style={{padding:40}}>Explorador — en construcción</div>}
+            </main>
+          </div>
+        </ProtectedRoute>
+      } />
+
+      <Route path="/incidente/:id" element={
+        <ProtectedRoute>
+          <div className="app-layout">
+            <Sidebar
+              archivos={[]}
+              tema={tema}
+              onToggleTema={toggleTema}
+              onChangeVista={() => {}}
+            />
+            <main className="app-main">
+              <DetalleIncidentePage />
             </main>
           </div>
         </ProtectedRoute>

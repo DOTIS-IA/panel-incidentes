@@ -37,10 +37,32 @@ const buildHeaders = (extraHeaders = {}) => {
 };
 
 const handleResponse = async (res) => {
+  // Validación de seguridad para cuando el token expira o es inválido
+  if (res.status === 401) {
+    console.warn("Token caducado o inválido. Redirigiendo al login...");
+    
+    // Limpiamos todo rastro de sesión vieja
+    window.localStorage.removeItem('token');
+    window.localStorage.removeItem('access_token');
+    window.localStorage.removeItem('authToken');
+    window.localStorage.removeItem('role');
+    
+    window.sessionStorage.removeItem('token');
+    window.sessionStorage.removeItem('access_token');
+
+    // Mandamos al usuario a la pantalla de login
+    window.location.href = '/login';
+    
+    // Detenemos la ejecución
+    throw new Error('Sesión expirada');
+  }
+
+  // Manejo de otros errores
   if (!res.ok) {
     const error = await res.json().catch(() => ({ detail: 'Error desconocido' }));
     throw new Error(error.detail || `Error ${res.status}`);
   }
+  
   return res.json();
 };
 
@@ -48,12 +70,16 @@ export const incidentesService = {
   getAll: async (filtros = {}) => {
     const params = new URLSearchParams();
 
-    if (filtros.fechaInicio) params.append('fecha_inicio', filtros.fechaInicio);
-    if (filtros.fechaFin) params.append('fecha_fin', filtros.fechaFin);
-    if (filtros.hora) params.append('hora', filtros.hora);
-    if (filtros.minutos) params.append('minutos', filtros.minutos);
-    if (filtros.id) params.append('id_conv', filtros.id);
-    if (filtros.tipoExtorsion) params.append('tipo_extorsion', filtros.tipoExtorsion);
+    if (filtros.id) {
+      // Búsqueda por ID exacto — ignorar todos los demás filtros
+      params.append('id_conv', filtros.id);
+    } else {
+      if (filtros.fechaInicio) params.append('fecha_inicio', filtros.fechaInicio);
+      if (filtros.fechaFin) params.append('fecha_fin', filtros.fechaFin);
+      if (filtros.hora) params.append('hora', filtros.hora);
+      if (filtros.minutos) params.append('minutos', filtros.minutos);
+      if (filtros.tipoExtorsion) params.append('tipo_extorsion', filtros.tipoExtorsion);
+    }
 
     const query = params.toString();
     const res = await fetch(`${BASE_URL}/data${query ? `?${query}` : ''}`, {
