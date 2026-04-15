@@ -74,6 +74,21 @@ class UsuarioActual(BaseModel):
     role: str
 
 
+class UsuarioCreate(BaseModel):
+    username: str
+    password: str
+    email: str
+    role: str = "operativo"
+
+
+class UsuarioResponse(BaseModel):
+    id: int
+    username: str
+    email: str
+    role: str
+    is_active: bool
+
+
 CONNINFO = (
     f"host={os.getenv('DB_HOST', 'localhost')} "
     f"port={os.getenv('DB_PORT', 5432)} "
@@ -142,6 +157,12 @@ def get_usuario_actual(token: str = Depends(oauth2_scheme)) -> UsuarioActual:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token inválido o expirado")
 
 
+def require_admin(usuario: UsuarioActual = Depends(get_usuario_actual)) -> UsuarioActual:
+    if usuario.role != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Se requiere rol admin")
+    return usuario
+
+
 # ── Endpoint: POST /auth/login ───────────────────────────────────────────────
 # OAuth2PasswordRequestForm lee automáticamente username y password del body
 # React lo llama con: fetch("/auth/login", { method: "POST", body: formData })
@@ -177,6 +198,38 @@ async def login(form: OAuth2PasswordRequestForm = Depends()):
     # 5. Todo correcto → generar y devolver el JWT
     token = crear_token(username, role)
     return TokenResponse(access_token=token, token_type="bearer", role=role)
+
+
+@app.post("/users", response_model=UsuarioResponse, status_code=status.HTTP_201_CREATED)
+async def create_user(user: UsuarioCreate, _: UsuarioActual = Depends(require_admin)):
+    if user.role not in {"admin", "monitor", "operativo"}:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Rol inválido")
+
+    password_hash = bcrypt.hashpw(user.password.encode(), bcrypt.gensalt()).decode()
+    sql = """
+        INSERT INTO public.users (username, password_hash, email, role)
+        VALUES (%(username)s, %(password_hash)s, %(email)s, %(role)s)
+        RETURNING id, username, email, role, is_active
+    """
+    params = {
+        "username": user.username,
+        "password_hash": password_hash,
+        "email": user.email,
+        "role": user.role,
+    }
+
+    try:
+        with pool.connection() as conn:
+            cur = conn.execute(sql, params)
+            row = cur.fetchone()
+            conn.commit()
+            cols = [desc[0] for desc in cur.description]
+            return dict(zip(cols, row))
+    except psycopg.errors.UniqueViolation:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="El usuario o correo ya existe")
+    except Exception as e:
+        print(f"[create_user] DB error: {e}")
+        raise HTTPException(status_code=503, detail=f"DB error: {e}")
 
 
 @app.get("/health")
@@ -297,18 +350,4 @@ async def get_incidente(id_conv: str, _: UsuarioActual = Depends(get_usuario_act
             raise
         except Exception as e:
             print(f"[get_incidente] DB error: {e}")
-            raise HTTPException(status_code=503, detail=f"DB error: {e}")
-
-
-@app.get("/extortion-types", response_model=list[TipoExtorsion])
-async def get_extortion_types(_: UsuarioActual = Depends(get_usuario_actual)):
-        sql = "SELECT id_extortion, name, description FROM public.extortion_type ORDER BY id_extortion"
-        try:
-            with pool.connection() as conn:
-                cur = conn.execute(sql)
-                cols = [desc[0] for desc in cur.description]
-                rows = cur.fetchall()
-                return [dict(zip(cols, row)) for row in rows]
-        except Exception as e:
-            print(f"[get_extortion_types] DB error: {e}")
             raise HTTPException(status_code=503, detail=f"DB error: {e}")

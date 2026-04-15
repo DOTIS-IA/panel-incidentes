@@ -1,11 +1,40 @@
 export const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
-// Lee el token guardado en localStorage después del login
-// y lo pone en el header Authorization que FastAPI espera
-const authHeaders = () => ({
-  'Content-Type': 'application/json',
-  'Authorization': `Bearer ${localStorage.getItem('token')}`,
-});
+const FALLBACK_TIPOS_EXTORSION = [
+  'Extorsión presencial-exigencia de pago o bienes (Directa)',
+  'Extorsión por secuestro virtual',
+  'Extorsión telefónica-virtual-exigencia de pago o bienes (Indirecta)',
+  'Extorsión escrita-otros medios exigencia de pago o bienes (Indirecta)',
+  'Fraude-engaño telefónico-virtual',
+  'Denuncia de localización y operación del probable extorsionador o grupo delictivo',
+  'Extorsión por invasión-despojo de predio',
+  'Extorsión por contenido sexual o íntimo',
+];
+
+const getToken = () => {
+  if (typeof window === 'undefined') return null;
+
+  const candidates = [
+    window.localStorage.getItem('access_token'),
+    window.localStorage.getItem('token'),
+    window.localStorage.getItem('authToken'),
+    window.sessionStorage.getItem('access_token'),
+    window.sessionStorage.getItem('token'),
+    window.sessionStorage.getItem('authToken'),
+  ];
+
+  return candidates.find((value) => value && String(value).trim()) || null;
+};
+
+const buildHeaders = (extraHeaders = {}) => {
+  const token = getToken();
+
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...extraHeaders,
+  };
+};
 
 const handleResponse = async (res) => {
   if (!res.ok) {
@@ -29,7 +58,7 @@ export const incidentesService = {
     const query = params.toString();
     const res = await fetch(`${BASE_URL}/data${query ? `?${query}` : ''}`, {
       method: 'GET',
-      headers: authHeaders(),
+      headers: buildHeaders(),
     });
 
     return handleResponse(res);
@@ -37,15 +66,22 @@ export const incidentesService = {
 
   getById: async (id) => {
     const res = await fetch(`${BASE_URL}/data/${id}`, {
-      headers: authHeaders(),
+      headers: buildHeaders(),
     });
     return handleResponse(res);
   },
 
   getTiposExtorsion: async () => {
-    const res = await fetch(`${BASE_URL}/extortion-types`);
-    const data = await handleResponse(res);
-    return Array.isArray(data) ? data.map((item) => item.name).filter(Boolean) : [];
+    try {
+      const res = await fetch(`${BASE_URL}/extortion-types`, {
+        headers: buildHeaders(),
+      });
+      const data = await handleResponse(res);
+      const tipos = Array.isArray(data) ? data.map((item) => item.name).filter(Boolean) : [];
+      return tipos.length > 0 ? tipos : FALLBACK_TIPOS_EXTORSION;
+    } catch {
+      return FALLBACK_TIPOS_EXTORSION;
+    }
   },
 
   generar: async (filtros) => incidentesService.getAll(filtros),
