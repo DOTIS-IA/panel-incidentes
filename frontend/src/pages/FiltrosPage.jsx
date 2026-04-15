@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import TimePicker from '../components/Filters/TimePicker';
 import DateRangePicker from '../components/Filters/DateRangePicker';
 import TipoExtorsion from '../components/Filters/TipoExtorsion';
@@ -18,6 +19,7 @@ const formatDateTime = (value) => {
 };
 
 const FiltrosPage = () => {
+  const navigate = useNavigate();
   const { loading, error, generarReporte } = useIncidentes();
   const [resultados, setResultados] = useState([]);
   const [consultado, setConsultado] = useState(false);
@@ -153,7 +155,12 @@ const FiltrosPage = () => {
 
           <div className="resultados-lista">
             {resultados.map((item) => (
-              <article key={item.id_conv_eleven} className="resultado-card">
+              <article
+                key={item.id_conv_eleven}
+                className="resultado-card"
+                onClick={() => navigate(`/incidente/${item.id_conv_eleven}`)}
+                style={{ cursor: 'pointer' }}
+              >
                 <div className="resultado-meta">
                   <span className="resultado-tag">{item.extortion_name || 'Sin tipo'}</span>
                   <span className="resultado-fecha">{formatDateTime(item.event_ts)}</span>
