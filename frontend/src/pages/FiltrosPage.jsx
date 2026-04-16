@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import TimePicker from '../components/Filters/TimePicker';
 import DateRangePicker from '../components/Filters/DateRangePicker';
 import TipoExtorsion from '../components/Filters/TipoExtorsion';
 import { useIncidentes } from '../hooks/useIncidentes';
+import { incidentesService } from '../services/api';
 import './FiltrosPage.css';
 
 const formatDateTime = (value) => {
@@ -17,9 +19,11 @@ const formatDateTime = (value) => {
 };
 
 const FiltrosPage = () => {
+  const navigate = useNavigate();
   const { loading, error, generarReporte } = useIncidentes();
   const [resultados, setResultados] = useState([]);
   const [consultado, setConsultado] = useState(false);
+  const [tiposExtorsion, setTiposExtorsion] = useState([]);
 
   const [filtros, setFiltros] = useState({
     hora: '09',
@@ -31,6 +35,29 @@ const FiltrosPage = () => {
   });
 
   const set = (key, val) => setFiltros((current) => ({ ...current, [key]: val }));
+
+  useEffect(() => {
+    let active = true;
+
+    const loadTiposExtorsion = async () => {
+      try {
+        const tipos = await incidentesService.getTiposExtorsion();
+        if (active) {
+          setTiposExtorsion(tipos);
+        }
+      } catch {
+        if (active) {
+          setTiposExtorsion([]);
+        }
+      }
+    };
+
+    loadTiposExtorsion();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const handleGenerar = async () => {
     const resultado = await generarReporte(filtros);
@@ -64,8 +91,8 @@ const FiltrosPage = () => {
       </div>
 
       <div className="filtros-body">
-        <div className="filtros-row">
-          <div className="filtros-group">
+        <div className="filtros-top-grid">
+          <div className="filtros-group filtros-panel-card">
             <label className="group-label">Seleccionar hora</label>
             <TimePicker
               hora={filtros.hora}
@@ -75,7 +102,7 @@ const FiltrosPage = () => {
             />
           </div>
 
-          <div className="filtros-group filtros-group-date">
+          <div className="filtros-group filtros-group-date filtros-panel-card">
             <label className="group-label">Fecha</label>
             <DateRangePicker
               fechaInicio={filtros.fechaInicio}
@@ -85,14 +112,20 @@ const FiltrosPage = () => {
             />
           </div>
 
-          <div className="filtros-group filtros-group-id">
+          <div className="filtros-group filtros-group-id filtros-panel-card">
             <label className="group-label">ID</label>
             <div className="id-badge">{filtros.id || 'Todos'}</div>
+            <p className="id-helper">
+              {filtros.id
+                ? 'La búsqueda priorizará el identificador capturado arriba.'
+                : 'Sin un ID específico, la consulta revisa todos los incidentes.'}
+            </p>
           </div>
         </div>
 
         <div className="filtros-row">
           <TipoExtorsion
+            tipos={tiposExtorsion}
             seleccionado={filtros.tipoExtorsion}
             onSelect={(tipo) => set('tipoExtorsion', tipo)}
           />
@@ -122,7 +155,12 @@ const FiltrosPage = () => {
 
           <div className="resultados-lista">
             {resultados.map((item) => (
-              <article key={item.id_conv_eleven} className="resultado-card">
+              <article
+                key={item.id_conv_eleven}
+                className="resultado-card"
+                onClick={() => navigate(`/incidente/${item.id_conv_eleven}`)}
+                style={{ cursor: 'pointer' }}
+              >
                 <div className="resultado-meta">
                   <span className="resultado-tag">{item.extortion_name || 'Sin tipo'}</span>
                   <span className="resultado-fecha">{formatDateTime(item.event_ts)}</span>

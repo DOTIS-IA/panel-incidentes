@@ -12,22 +12,24 @@
 }
 
 .tipo-lista {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
 }
 
 .tipo-btn {
   width: 100%;
-  padding: 11px 16px;
+  min-height: 64px;
+  padding: 14px 16px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 12px;
   background: var(--bg-surface);
   font-size: 13.5px;
   color: var(--text-secondary);
   cursor: pointer;
   text-align: left;
   transition: all 0.15s;
+  line-height: 1.4;
 }
 
 .tipo-btn:hover {
@@ -41,4 +43,10 @@
   background: var(--color-primary);
   color: #fff;
   font-weight: 600;
+}
+
+@media (max-width: 900px) {
+  .tipo-lista {
+    grid-template-columns: 1fr;
+  }
 }
