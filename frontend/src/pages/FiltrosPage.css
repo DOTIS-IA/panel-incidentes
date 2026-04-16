@@ -253,7 +253,6 @@
   border-top: 1px solid var(--border-soft);
 }
 
-
 @media (max-width: 900px) {
   .filtros-page {
     padding: 24px 18px 40px;
