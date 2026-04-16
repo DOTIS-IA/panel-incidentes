@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import TimePicker from '../components/Filters/TimePicker';
 import DateRangePicker from '../components/Filters/DateRangePicker';
 import TipoExtorsion from '../components/Filters/TipoExtorsion';
@@ -19,7 +18,6 @@ const formatDateTime = (value) => {
 };
 
 const FiltrosPage = () => {
-  const navigate = useNavigate();
   const { loading, error, generarReporte } = useIncidentes();
   const [resultados, setResultados] = useState([]);
   const [consultado, setConsultado] = useState(false);
@@ -122,26 +120,14 @@ const FiltrosPage = () => {
             </p>
           </div>
         </div>
-      {/*Menú desplegable*/}
+
         <div className="filtros-row">
-          <div className="filtros-group filtros-panel-card" style={{ width: '100%' }}>
-            <label className="group-label">Tipo de extorsión</label>
-            <select
-              className="buscar-input" 
-              value={filtros.tipoExtorsion || ''}
-              onChange={(e) => set('tipoExtorsion', e.target.value)}
-              style={{ width: '100%', marginTop: '8px', cursor: 'pointer', backgroundColor: 'var(--bg-surface)' }}
-            >
-              <option value="">-- Todos los tipos --</option>
-              {tiposExtorsion.map((tipo, index) => (
-                <option key={index} value={tipo}>
-                  {tipo}
-                </option>
-              ))}
-            </select>
-          </div>
+          <TipoExtorsion
+            tipos={tiposExtorsion}
+            seleccionado={filtros.tipoExtorsion}
+            onSelect={(tipo) => set('tipoExtorsion', tipo)}
+          />
         </div>
-      {/*Fin-Menú desplegable*/}
 
         {error && <p className="filtros-error">Aviso: {error}</p>}
       </div>
@@ -167,12 +153,7 @@ const FiltrosPage = () => {
 
           <div className="resultados-lista">
             {resultados.map((item) => (
-              <article
-                key={item.id_conv_eleven}
-                className="resultado-card"
-                onClick={() => navigate(`/incidente/${item.id_conv_eleven}`)}
-                style={{ cursor: 'pointer' }}
-              >
+              <article key={item.id_conv_eleven} className="resultado-card">
                 <div className="resultado-meta">
                   <span className="resultado-tag">{item.extortion_name || 'Sin tipo'}</span>
                   <span className="resultado-fecha">{formatDateTime(item.event_ts)}</span>

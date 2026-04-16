@@ -10,6 +10,9 @@ import './App.css';
 function App() {
   const [vista, setVista] = useState('vistas');
   const [tema, setTema]   = useState('dark');
+  
+  
+  const [sidebarAbierta, setSidebarAbierta] = useState(true);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', tema);
@@ -19,21 +22,32 @@ function App() {
 
   return (
     <Routes>
-      {/* Ruta pública — no requiere token */}
       <Route path="/login" element={<LoginPage />} />
 
-      {/* Ruta protegida — redirige a /login si no hay token */}
       <Route path="/" element={
         <ProtectedRoute>
-          <div className="app-layout">
-            <Sidebar
-              vistaActiva={vista}
-              onChangeVista={setVista}
-              archivos={[]}
-              tema={tema}
-              onToggleTema={toggleTema}
-            />
+          {/* Le agregamos una clase dinámica al layout para saber su estado */}
+          <div className={`app-layout ${sidebarAbierta ? '' : 'sidebar-oculta'}`}>
+            
+            {/* Envolvemos el Sidebar en un contenedor que podamos animar */}
+            <div className={`sidebar-container ${sidebarAbierta ? '' : 'cerrada'}`}>
+              <Sidebar
+                vistaActiva={vista}
+                onChangeVista={setVista}
+                archivos={[]}
+                tema={tema}
+                onToggleTema={toggleTema}
+              />
+            </div>
+
             <main className="app-main">
+              {/* Botón para abrir/cerrar la barra lateral */}
+              <div className="toggle-container">
+                <button className="btn-toggle-sidebar" onClick={() => setSidebarAbierta(!sidebarAbierta)}>
+                  {sidebarAbierta ? '◀ Ocultar Menú' : '☰ Mostrar Menú'}
+                </button>
+              </div>
+
               {vista === 'vistas'     && <FiltrosPage />}
               {vista === 'inicio'     && <div style={{padding:40}}>Inicio — en construcción</div>}
               {vista === 'explorador' && <div style={{padding:40}}>Explorador — en construcción</div>}
@@ -44,14 +58,21 @@ function App() {
 
       <Route path="/incidente/:id" element={
         <ProtectedRoute>
-          <div className="app-layout">
-            <Sidebar
-              archivos={[]}
-              tema={tema}
-              onToggleTema={toggleTema}
-              onChangeVista={() => {}}
-            />
+          <div className={`app-layout ${sidebarAbierta ? '' : 'sidebar-oculta'}`}>
+            <div className={`sidebar-container ${sidebarAbierta ? '' : 'cerrada'}`}>
+              <Sidebar
+                archivos={[]}
+                tema={tema}
+                onToggleTema={toggleTema}
+                onChangeVista={() => {}}
+              />
+            </div>
             <main className="app-main">
+              <div className="toggle-container">
+                <button className="btn-toggle-sidebar" onClick={() => setSidebarAbierta(!sidebarAbierta)}>
+                  {sidebarAbierta ? '◀ Ocultar Menú' : '☰ Mostrar Menú'}
+                </button>
+              </div>
               <DetalleIncidentePage />
             </main>
           </div>

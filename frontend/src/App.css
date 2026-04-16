@@ -8,16 +8,63 @@ body {
   font-family: 'Segoe UI', system-ui, sans-serif;
   background: var(--bg-app);
   color: var(--text-primary);
+  overflow-x: hidden; /* Evita que salga barra de scroll horizontal al animar */
 }
 
 .app-layout {
   display: flex;
   min-height: 100vh;
+  position: relative;
 }
 
+/* 1. Contenedor de la barra lateral con animación */
+.sidebar-container {
+  width: 220px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  z-index: 100;
+  transition: transform 0.3s ease; /* Animación suave de movimiento */
+}
+
+/* Cuando el estado es cerrado, la movemos 100% a la izquierda (afuera de la pantalla) */
+.sidebar-container.cerrada {
+  transform: translateX(-100%);
+}
+
+/* 2. El área principal de contenido */
 .app-main {
-  margin-left: 220px;
+  margin-left: 220px; /* Deja el hueco para la barra lateral */
   flex: 1;
   min-height: 100vh;
   background: var(--bg-app);
+  transition: margin-left 0.3s ease; /* Animación para que se estire al cerrar la barra */
+}
+
+/* Cuando la barra se oculta, quitamos el margen para que el main ocupe todo el ancho */
+.app-layout.sidebar-oculta .app-main {
+  margin-left: 0;
+}
+
+/* 3. Estilos del nuevo botón para mostrar/ocultar */
+.toggle-container {
+  padding: 24px 40px 0; /* Padding alineado con el interior de tus páginas */
+}
+
+.btn-toggle-sidebar {
+  background: transparent;
+  color: var(--text-muted, #9CA3AF);
+  border: 1px solid var(--border, #374151);
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.btn-toggle-sidebar:hover {
+  background: var(--bg-surface, #1F2937);
+  color: var(--text-primary, #F9FAFB);
 }
