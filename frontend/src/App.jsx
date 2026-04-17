@@ -26,10 +26,10 @@ function App() {
 
       <Route path="/" element={
         <ProtectedRoute>
-          {/* Le agregamos una clase dinámica al layout para saber su estado */}
+          
           <div className={`app-layout ${sidebarAbierta ? '' : 'sidebar-oculta'}`}>
             
-            {/* Envolvemos el Sidebar en un contenedor que podamos animar */}
+            
             <div className={`sidebar-container ${sidebarAbierta ? '' : 'cerrada'}`}>
               <Sidebar
                 vistaActiva={vista}
