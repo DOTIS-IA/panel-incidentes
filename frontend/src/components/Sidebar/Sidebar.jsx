@@ -1,10 +1,17 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './Sidebar.css';
 
 const Sidebar = ({ archivos = [], vistaActiva = 'vistas', onChangeVista, tema, onToggleTema }) => {
   const [carpeta, setCarpeta] = useState('Archivos');
+  
+  // NUEVO: Estado para mostrar/ocultar el menú de cerrar sesión
+  const [mostrarMenuSalir, setMostrarMenuSalir] = useState(false);
+  const navigate = useNavigate();
+
   const role = localStorage.getItem('role') || '—';
   let username = localStorage.getItem('username');
+  
   if (!username) {
     try {
       const token = localStorage.getItem('token');
@@ -14,6 +21,20 @@ const Sidebar = ({ archivos = [], vistaActiva = 'vistas', onChangeVista, tema, o
       username = '—';
     }
   }
+
+  // NUEVO: Función para cerrar sesión
+  const handleLogout = () => {
+    // 1. Borramos la memoria
+    localStorage.removeItem('token');
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('role');
+    localStorage.removeItem('username');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('access_token');
+    
+    // 2. Redirigimos al Login
+    window.location.href = '/login';
+  };
 
   return (
     <aside className="sidebar">
@@ -97,14 +118,37 @@ const Sidebar = ({ archivos = [], vistaActiva = 'vistas', onChangeVista, tema, o
         }
       </ul>
 
-      {/* Usuario */}
-      <div className="sidebar-user">
-        <div className="user-avatar">{username[0].toUpperCase()}</div>
-        <div className="user-info">
-          <span className="user-name">{username}</span>
-          <span className="user-email">{role}</span>
+      
+      <div className="sidebar-user-container">
+        
+        {/* Panel flotante de Cerrar Sesión (solo se ve si mostrarMenuSalir es true) */}
+        {mostrarMenuSalir && (
+          <div className="logout-popover">
+            <button className="logout-btn" onClick={handleLogout}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                <polyline points="16 17 21 12 16 7"></polyline>
+                <line x1="21" y1="12" x2="9" y2="12"></line>
+              </svg>
+              Cerrar Sesión
+            </button>
+          </div>
+        )}
+
+        {/* Perfil (clickeable) */}
+        <div 
+          className="sidebar-user" 
+          onClick={() => setMostrarMenuSalir(!mostrarMenuSalir)}
+        >
+          <div className="user-avatar">{username && username !== '—' ? username[0].toUpperCase() : 'A'}</div>
+          <div className="user-info">
+            <span className="user-name">{username}</span>
+            <span className="user-email">{role}</span>
+          </div>
         </div>
       </div>
+      
+      
     </aside>
   );
 };
