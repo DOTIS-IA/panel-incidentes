@@ -59,6 +59,19 @@ const FiltrosPage = () => {
     };
   }, []);
 
+  const limpiarFiltros = () => {
+    setFiltros({
+      hora: '09',
+      minutos: '00',
+      fechaInicio: '',
+      fechaFin: '',
+      id: '',
+      tipoExtorsion: null,
+    });
+    setResultados([]);
+    setConsultado(false);
+  };
+
   const handleGenerar = async () => {
     const resultado = await generarReporte(filtros);
     setResultados(Array.isArray(resultado) ? resultado : []);
@@ -135,6 +148,9 @@ const FiltrosPage = () => {
       </div>
 
       <div className="filtros-footer">
+        <button className="btn-limpiar" onClick={limpiarFiltros} disabled={loading}>
+          Limpiar filtros
+        </button>
         <button className="btn-generar" onClick={handleGenerar} disabled={loading}>
           {loading ? 'Generando...' : 'Generar'}
         </button>
