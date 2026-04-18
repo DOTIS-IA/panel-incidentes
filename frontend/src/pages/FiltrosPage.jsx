@@ -26,8 +26,10 @@ const FiltrosPage = () => {
   const [tiposExtorsion, setTiposExtorsion] = useState([]);
 
   const [filtros, setFiltros] = useState({
-    hora: '09',
-    minutos: '00',
+    horaInicio: '09',
+    minutosInicio: '00',
+    horaFin: '14',
+    minutosFin: '00',
     fechaInicio: '',
     fechaFin: '',
     id: '',
@@ -35,6 +37,9 @@ const FiltrosPage = () => {
   });
 
   const set = (key, val) => setFiltros((current) => ({ ...current, [key]: val }));
+  const rangoInicioTotal = Number(filtros.horaInicio) * 60 + Number(filtros.minutosInicio);
+  const rangoFinTotal = Number(filtros.horaFin) * 60 + Number(filtros.minutosFin);
+  const rangoHoraInvalido = rangoFinTotal < rangoInicioTotal;
 
   useEffect(() => {
     let active = true;
@@ -61,8 +66,10 @@ const FiltrosPage = () => {
 
   const limpiarFiltros = () => {
     setFiltros({
-      hora: '09',
-      minutos: '00',
+      horaInicio: '09',
+      minutosInicio: '00',
+      horaFin: '14',
+      minutosFin: '00',
       fechaInicio: '',
       fechaFin: '',
       id: '',
@@ -107,11 +114,18 @@ const FiltrosPage = () => {
         <div className="filtros-top-grid">
           <div className="filtros-group filtros-panel-card">
             <label className="group-label">Seleccionar hora</label>
+            <p className="group-helper">
+              Define un rango puntual o usa uno de los horarios sugeridos para acelerar la consulta.
+            </p>
             <TimePicker
-              hora={filtros.hora}
-              minutos={filtros.minutos}
-              onChangeHora={(h) => set('hora', h)}
-              onChangeMinutos={(m) => set('minutos', m)}
+              horaInicio={filtros.horaInicio}
+              minutosInicio={filtros.minutosInicio}
+              horaFin={filtros.horaFin}
+              minutosFin={filtros.minutosFin}
+              onChangeHoraInicio={(h) => set('horaInicio', h)}
+              onChangeMinutosInicio={(m) => set('minutosInicio', m)}
+              onChangeHoraFin={(h) => set('horaFin', h)}
+              onChangeMinutosFin={(m) => set('minutosFin', m)}
             />
           </div>
 
@@ -151,7 +165,11 @@ const FiltrosPage = () => {
         <button className="btn-limpiar" onClick={limpiarFiltros} disabled={loading}>
           Limpiar filtros
         </button>
-        <button className="btn-generar" onClick={handleGenerar} disabled={loading}>
+        <button
+          className="btn-generar"
+          onClick={handleGenerar}
+          disabled={loading || rangoHoraInvalido}
+        >
           {loading ? 'Generando...' : 'Generar'}
         </button>
       </div>

@@ -1,84 +1,140 @@
 import './TimePicker.css';
 
-const HOURS = Array.from({ length: 12 }, (_, index) => String(index + 1).padStart(2, '0'));
-const MINUTES = Array.from({ length: 60 }, (_, index) => String(index).padStart(2, '0'));
+const QUICK_RANGES = [
+  { label: 'Todo el dia', start: '00:00', end: '23:59' },
+  { label: 'Manana', start: '06:00', end: '11:59' },
+  { label: 'Tarde', start: '12:00', end: '17:59' },
+  { label: 'Noche', start: '18:00', end: '23:00' },
+];
 
-const toDisplayHour = (hour24) => {
-  const numeric = Number(hour24);
-  if (Number.isNaN(numeric)) return '12';
-  return String(numeric % 12 || 12).padStart(2, '0');
+const toTimeValue = (hour24, minute) =>
+  `${String(hour24).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+
+const toTotalMinutes = (hour24, minute) => Number(hour24) * 60 + Number(minute);
+
+const formatTimeLabel = (hour24, minute) => {
+  const numericHour = Number(hour24);
+  const period = numericHour >= 12 ? 'PM' : 'AM';
+  const displayHour = String(numericHour % 12 || 12).padStart(2, '0');
+  return `${displayHour}:${String(minute).padStart(2, '0')} ${period}`;
 };
 
-const getPeriod = (hour24) => (Number(hour24) >= 12 ? 'PM' : 'AM');
+const formatDuration = (startTotalMinutes, endTotalMinutes) => {
+  const diff = endTotalMinutes - startTotalMinutes;
+  if (diff < 0) return 'Rango invalido';
 
-const to24Hour = (hour12, period) => {
-  const safeHour = Math.min(12, Math.max(1, Number(hour12) || 12));
-  if (period === 'AM') {
-    return String(safeHour === 12 ? 0 : safeHour).padStart(2, '0');
-  }
-  return String(safeHour === 12 ? 12 : safeHour + 12).padStart(2, '0');
+  const hours = Math.floor(diff / 60);
+  const minutes = diff % 60;
+
+  if (hours && minutes) return `${hours} h ${minutes} min`;
+  if (hours) return `${hours} h`;
+  return `${minutes} min`;
 };
 
-const PickerColumn = ({ label, options, selectedValue, onSelect }) => (
-  <div className="time-box">
-    <div className="time-wheel" role="listbox" aria-label={label}>
-      {options.map((option) => (
-        <button
-          key={option}
-          type="button"
-          className={`time-wheel-option ${selectedValue === option ? 'is-active' : ''}`}
-          onClick={() => onSelect(option)}
-        >
-          {option}
-        </button>
-      ))}
+const TimeField = ({ title, helper, value, onChange }) => (
+  <section className="time-field-card">
+    <div className="time-field-header">
+      <span className="time-field-kicker">{title}</span>
+      <strong className="time-field-value">{value}</strong>
     </div>
-    <span className="time-box-label">{label}</span>
-  </div>
+
+    <label className="time-input-shell">
+      <span className="time-input-label">{helper}</span>
+      <input
+        className="time-native-input"
+        type="time"
+        step="300"
+        value={value}
+        onChange={(event) => onChange?.(event.target.value)}
+      />
+    </label>
+  </section>
 );
 
-const TimePicker = ({ hora = '09', minutos = '00', onChangeHora, onChangeMinutos }) => {
-  const displayHour = toDisplayHour(hora);
-  const period = getPeriod(hora);
-  const selectedTimeLabel = `${displayHour}:${String(minutos).padStart(2, '0')} ${period}`;
+const TimePicker = ({
+  horaInicio = '09',
+  minutosInicio = '00',
+  horaFin = '14',
+  minutosFin = '00',
+  onChangeHoraInicio,
+  onChangeMinutosInicio,
+  onChangeHoraFin,
+  onChangeMinutosFin,
+}) => {
+  const valorInicio = toTimeValue(horaInicio, minutosInicio);
+  const valorFin = toTimeValue(horaFin, minutosFin);
+  const inicioTotal = toTotalMinutes(horaInicio, minutosInicio);
+  const finTotal = toTotalMinutes(horaFin, minutosFin);
+  const rangoInvalido = finTotal < inicioTotal;
+
+  const applyTime = (value, changeHour, changeMinute) => {
+    const [nextHour = '00', nextMinute = '00'] = String(value || '').split(':');
+    changeHour?.(nextHour);
+    changeMinute?.(nextMinute);
+  };
+
+  const applyQuickRange = ({ start, end }) => {
+    applyTime(start, onChangeHoraInicio, onChangeMinutosInicio);
+    applyTime(end, onChangeHoraFin, onChangeMinutosFin);
+  };
 
   return (
-    <div className="timepicker-card">
-      <div className="timepicker-shell">
-        <PickerColumn
-          label="Hora"
-          options={HOURS}
-          selectedValue={displayHour}
-          onSelect={(nextHour) => onChangeHora?.(to24Hour(nextHour, period))}
-        />
+    <div className="timepicker-card timepicker-card-range">
+      <div className="timepicker-quick-ranges" role="group" aria-label="Rangos sugeridos">
+        {QUICK_RANGES.map((range) => {
+          const isActive = range.start === valorInicio && range.end === valorFin;
 
-        <div className="time-box-separator">:</div>
-
-        <PickerColumn
-          label="Minutos"
-          options={MINUTES}
-          selectedValue={String(minutos).padStart(2, '0')}
-          onSelect={(nextMinute) => onChangeMinutos?.(nextMinute)}
-        />
-
-        <div className="time-period-toggle" role="group" aria-label="Periodo">
-          {['AM', 'PM'].map((option) => (
+          return (
             <button
-              key={option}
+              key={range.label}
               type="button"
-              className={`time-period-btn ${period === option ? 'is-active' : ''}`}
-              onClick={() => onChangeHora?.(to24Hour(displayHour, option))}
+              className={`time-quick-btn ${isActive ? 'is-active' : ''}`}
+              onClick={() => applyQuickRange(range)}
             >
-              {option}
+              {range.label}
             </button>
-          ))}
+          );
+        })}
+      </div>
+
+      <div className="time-range-grid">
+        <TimeField
+          title="Desde"
+          helper="Hora inicial"
+          value={valorInicio}
+          onChange={(value) => applyTime(value, onChangeHoraInicio, onChangeMinutosInicio)}
+        />
+
+        <div className="time-range-arrow" aria-hidden="true">
+          <span>→</span>
+        </div>
+
+        <TimeField
+          title="Hasta"
+          helper="Hora final"
+          value={valorFin}
+          onChange={(value) => applyTime(value, onChangeHoraFin, onChangeMinutosFin)}
+        />
+      </div>
+
+      <div className="timepicker-summary">
+        <div className="timepicker-selected">
+          <span className="timepicker-selected-label">Rango seleccionado</span>
+          <strong className="timepicker-selected-value">
+            {formatTimeLabel(horaInicio, minutosInicio)} - {formatTimeLabel(horaFin, minutosFin)}
+          </strong>
+        </div>
+
+        <div className={`timepicker-duration ${rangoInvalido ? 'is-invalid' : ''}`}>
+          Duracion: {formatDuration(inicioTotal, finTotal)}
         </div>
       </div>
 
-      <div className="timepicker-selected">
-        <span className="timepicker-selected-label">Hora seleccionada:</span>
-        <strong className="timepicker-selected-value">{selectedTimeLabel}</strong>
-      </div>
+      {rangoInvalido && (
+        <p className="timepicker-warning">
+          La hora final debe ser igual o posterior a la hora inicial.
+        </p>
+      )}
     </div>
   );
 };

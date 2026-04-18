@@ -1,82 +1,111 @@
 import { useState } from 'react';
 import './DateRangePicker.css';
 
-// =============================================
-// SELECTOR DE RANGO DE FECHAS
-// Props:
-//   - fechaInicio: string 'YYYY-MM-DD'
-//   - fechaFin: string 'YYYY-MM-DD'
-//   - onChangeFechaInicio: fn(fecha)
-//   - onChangeFechaFin: fn(fecha)
-// =============================================
-const DIAS  = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-const MESES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const DIAS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const MESES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 const getDiasDelMes = (year, month) => {
   const primerDia = new Date(year, month, 1).getDay();
-  const ajuste    = primerDia === 0 ? 6 : primerDia - 1;
+  const ajuste = primerDia === 0 ? 6 : primerDia - 1;
   const totalDias = new Date(year, month + 1, 0).getDate();
   return { ajuste, totalDias };
 };
 
+const formatDisplay = (fecha) => {
+  if (!fecha) return '--/--/----';
+  const [year, month, day] = fecha.split('-');
+  return `${month}/${day}/${year}`;
+};
+
+const formatSummary = (fecha) => {
+  if (!fecha) return 'Sin seleccionar';
+
+  const [year, month, day] = fecha.split('-').map(Number);
+  const parsed = new Date(year, month - 1, day);
+
+  return new Intl.DateTimeFormat('es-MX', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(parsed);
+};
+
+const getRangeDays = (fechaInicio, fechaFin) => {
+  if (!fechaInicio || !fechaFin) return null;
+
+  const inicio = new Date(`${fechaInicio}T00:00:00`);
+  const fin = new Date(`${fechaFin}T00:00:00`);
+  const diff = Math.round((fin - inicio) / 86400000);
+
+  return diff + 1;
+};
+
 const DateRangePicker = ({ fechaInicio, fechaFin, onChangeFechaInicio, onChangeFechaFin }) => {
   const hoy = new Date();
-  const [viewYear, setViewYear]   = useState(hoy.getFullYear());
+  const [viewYear, setViewYear] = useState(hoy.getFullYear());
   const [viewMonth, setViewMonth] = useState(hoy.getMonth());
 
   const { ajuste, totalDias } = getDiasDelMes(viewYear, viewMonth);
-
-  const formatDisplay = (f) => {
-    if (!f) return '--/--/----';
-    const [y, m, d] = f.split('-');
-    return `${m}/${d}/${y}`;
-  };
+  const rangeDays = getRangeDays(fechaInicio, fechaFin);
 
   const handleDayClick = (day) => {
-    const fecha = `${viewYear}-${String(viewMonth + 1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const fecha = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
     if (!fechaInicio || (fechaInicio && fechaFin)) {
       onChangeFechaInicio?.(fecha);
       onChangeFechaFin?.(null);
-    } else {
-      if (fecha < fechaInicio) {
-        onChangeFechaFin?.(fechaInicio);
-        onChangeFechaInicio?.(fecha);
-      } else {
-        onChangeFechaFin?.(fecha);
-      }
+      return;
     }
+
+    if (fecha < fechaInicio) {
+      onChangeFechaFin?.(fechaInicio);
+      onChangeFechaInicio?.(fecha);
+      return;
+    }
+
+    onChangeFechaFin?.(fecha);
   };
 
   const isInRange = (day) => {
     if (!fechaInicio || !fechaFin) return false;
-    const f = `${viewYear}-${String(viewMonth + 1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-    return f > fechaInicio && f < fechaFin;
+    const fecha = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    return fecha > fechaInicio && fecha < fechaFin;
   };
 
   const isSelected = (day) => {
-    const f = `${viewYear}-${String(viewMonth + 1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-    return f === fechaInicio || f === fechaFin;
+    const fecha = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    return fecha === fechaInicio || fecha === fechaFin;
   };
 
   const prevMonth = () => {
-    if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y - 1); }
-    else setViewMonth(m => m - 1);
+    if (viewMonth === 0) {
+      setViewMonth(11);
+      setViewYear((year) => year - 1);
+      return;
+    }
+
+    setViewMonth((month) => month - 1);
   };
 
   const nextMonth = () => {
-    if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y + 1); }
-    else setViewMonth(m => m + 1);
+    if (viewMonth === 11) {
+      setViewMonth(0);
+      setViewYear((year) => year + 1);
+      return;
+    }
+
+    setViewMonth((month) => month + 1);
   };
 
   return (
     <div className="datepicker">
       <div className="datepicker-range">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-          <rect x="1" y="2" width="12" height="11" rx="2" stroke="#6C63FF" strokeWidth="1.5" fill="none"/>
-          <path d="M1 6H13" stroke="#6C63FF" strokeWidth="1.5"/>
-          <path d="M4 1V3M10 1V3" stroke="#6C63FF" strokeWidth="1.5" strokeLinecap="round"/>
+          <rect x="1" y="2" width="12" height="11" rx="2" stroke="#6C63FF" strokeWidth="1.5" fill="none" />
+          <path d="M1 6H13" stroke="#6C63FF" strokeWidth="1.5" />
+          <path d="M4 1V3M10 1V3" stroke="#6C63FF" strokeWidth="1.5" strokeLinecap="round" />
         </svg>
-        <span>{formatDisplay(fechaInicio)} – {formatDisplay(fechaFin)}</span>
+        <span>{formatDisplay(fechaInicio)} - {formatDisplay(fechaFin)}</span>
       </div>
 
       <div className="datepicker-nav">
@@ -86,9 +115,9 @@ const DateRangePicker = ({ fechaInicio, fechaFin, onChangeFechaInicio, onChangeF
       </div>
 
       <div className="datepicker-grid">
-        {DIAS.map(d => <span key={d} className="day-label">{d}</span>)}
-        {Array.from({ length: ajuste }).map((_, i) => <span key={`e-${i}`} />)}
-        {Array.from({ length: totalDias }, (_, i) => i + 1).map(day => (
+        {DIAS.map((dia) => <span key={dia} className="day-label">{dia}</span>)}
+        {Array.from({ length: ajuste }).map((_, index) => <span key={`empty-${index}`} />)}
+        {Array.from({ length: totalDias }, (_, index) => index + 1).map((day) => (
           <button
             key={day}
             className={`day-btn ${isSelected(day) ? 'selected' : ''} ${isInRange(day) ? 'in-range' : ''}`}
@@ -97,6 +126,19 @@ const DateRangePicker = ({ fechaInicio, fechaFin, onChangeFechaInicio, onChangeF
             {day}
           </button>
         ))}
+      </div>
+
+      <div className="datepicker-summary">
+        <div className="datepicker-summary-copy">
+          <span className="datepicker-summary-label">Rango seleccionado</span>
+          <strong className="datepicker-summary-value">
+            {formatSummary(fechaInicio)} - {formatSummary(fechaFin)}
+          </strong>
+        </div>
+
+        <div className={`datepicker-duration ${rangeDays ? '' : 'is-pending'}`}>
+          {rangeDays ? `${rangeDays} dia(s)` : 'Selecciona dos fechas'}
+        </div>
       </div>
     </div>
   );
