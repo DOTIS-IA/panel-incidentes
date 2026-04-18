@@ -1,31 +1,27 @@
 import './TipoExtorsion.css';
 
 const TIPOS_DEFAULT = [
-  'Extorsion presencial-exigencia de pago o bienes (Directa)',
-  'Extorsion por secuestro virtual',
-  'Extorsion telefonica-virtual-exigencia de pago o bienes (Indirecta)',
-  'Extorsion escrita-otros medios exigencia de pago o bienes (Indirecta)',
-  'Fraude-engano telefonico-virtual',
-  'Denuncia de localizacion y operacion del probable extorsionador o grupo delictivo',
-  'Extorsion por invasion-despojo de predio',
-  'Extorsion por contenido sexual o intimo',
+  'Extorsión presencial-exigencia de pago o bienes (Directa)',
+  'Extorsión por secuestro virtual',
+  'Extorsión telefónica-virtual-exigencia de pago o bienes (Indirecta)',
+  'Extorsión escrita-otros medios exigencia de pago o bienes (Indirecta)',
+  'Fraude-engaño telefónico-virtual',
+  'Denuncia de localización y operación del probable extorsionador o grupo delictivo',
+  'Extorsión por invasión-despojo de predio',
+  'Extorsión por contenido sexual o íntimo',
 ];
 
 const normalizeLabel = (tipo) =>
   String(tipo || '')
-    .replace(/Extorsi[oó]n/gi, 'Extorsion')
-    .replace(/telef[oó]nica/gi, 'telefonica')
-    .replace(/engañ[oa]/gi, 'engano')
-    .replace(/localizaci[oó]n/gi, 'localizacion')
-    .replace(/operaci[oó]n/gi, 'operacion')
-    .replace(/invasi[oó]n/gi, 'invasion')
-    .replace(/íntimo/gi, 'intimo')
-    .replace(/í/gi, 'i')
-    .replace(/á/gi, 'a')
-    .replace(/é/gi, 'e')
-    .replace(/ó/gi, 'o')
-    .replace(/ú/gi, 'u')
-    .replace(/ñ/gi, 'n');
+    .replace(/Extorsi\?n/gi, 'Extorsión')
+    .replace(/Extorsion/gi, 'Extorsión')
+    .replace(/telef\?nica/gi, 'telefónica')
+    .replace(/telefonica/gi, 'telefónica')
+    .replace(/engano/gi, 'engaño')
+    .replace(/localizacion/gi, 'localización')
+    .replace(/operacion/gi, 'operación')
+    .replace(/invasion/gi, 'invasión')
+    .replace(/intimo/gi, 'íntimo');
 
 const TipoExtorsion = ({ tipos = TIPOS_DEFAULT, seleccionado, onSelect }) => {
   const opciones = Array.isArray(tipos) && tipos.length > 0 ? tipos : TIPOS_DEFAULT;
@@ -33,9 +29,9 @@ const TipoExtorsion = ({ tipos = TIPOS_DEFAULT, seleccionado, onSelect }) => {
   return (
     <section className="tipo-extorsion">
       <div className="tipo-header">
-        <label className="tipo-label">Tipo de extorsion</label>
+        <label className="tipo-label">Tipo de extorsión</label>
         <p className="tipo-helper">
-          Selecciona una categoria para enfocar la consulta en un patron especifico.
+          Selecciona una categoría para enfocar la consulta en un patrón específico.
         </p>
       </div>
 

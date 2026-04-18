@@ -1,8 +1,8 @@
 import './TimePicker.css';
 
 const QUICK_RANGES = [
-  { label: 'Todo el dia', start: '00:00', end: '23:59' },
-  { label: 'Manana', start: '06:00', end: '11:59' },
+  { label: 'Todo el día', start: '00:00', end: '23:59' },
+  { label: 'Mañana', start: '06:00', end: '11:59' },
   { label: 'Tarde', start: '12:00', end: '17:59' },
   { label: 'Noche', start: '18:00', end: '23:00' },
 ];
@@ -21,7 +21,7 @@ const formatTimeLabel = (hour24, minute) => {
 
 const formatDuration = (startTotalMinutes, endTotalMinutes) => {
   const diff = endTotalMinutes - startTotalMinutes;
-  if (diff < 0) return 'Rango invalido';
+  if (diff < 0) return 'Rango inválido';
 
   const hours = Math.floor(diff / 60);
   const minutes = diff % 60;
@@ -126,7 +126,7 @@ const TimePicker = ({
         </div>
 
         <div className={`timepicker-duration ${rangoInvalido ? 'is-invalid' : ''}`}>
-          Duracion: {formatDuration(inicioTotal, finTotal)}
+          Duración: {formatDuration(inicioTotal, finTotal)}
         </div>
       </div>
 

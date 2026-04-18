@@ -1,33 +1,27 @@
 export const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8003';
 
 const FALLBACK_TIPOS_EXTORSION = [
-  'Extorsion presencial-exigencia de pago o bienes (Directa)',
-  'Extorsion por secuestro virtual',
-  'Extorsion telefonica-virtual-exigencia de pago o bienes (Indirecta)',
-  'Extorsion escrita-otros medios exigencia de pago o bienes (Indirecta)',
-  'Fraude-engano telefonico-virtual',
-  'Denuncia de localizacion y operacion del probable extorsionador o grupo delictivo',
-  'Extorsion por invasion-despojo de predio',
-  'Extorsion por contenido sexual o intimo',
+  'Extorsión presencial-exigencia de pago o bienes (Directa)',
+  'Extorsión por secuestro virtual',
+  'Extorsión telefónica-virtual-exigencia de pago o bienes (Indirecta)',
+  'Extorsión escrita-otros medios exigencia de pago o bienes (Indirecta)',
+  'Fraude-engaño telefónico-virtual',
+  'Denuncia de localización y operación del probable extorsionador o grupo delictivo',
+  'Extorsión por invasión-despojo de predio',
+  'Extorsión por contenido sexual o íntimo',
 ];
 
 const normalizeExtortionLabel = (value) =>
   String(value || '')
-    .replace(/Extorsi\?n/gi, 'Extorsion')
-    .replace(/Extorsi[oó]n/gi, 'Extorsion')
-    .replace(/telef\?nica/gi, 'telefonica')
-    .replace(/telef[oó]nica/gi, 'telefonica')
-    .replace(/engañ[oa]/gi, 'engano')
-    .replace(/localizaci[oó]n/gi, 'localizacion')
-    .replace(/operaci[oó]n/gi, 'operacion')
-    .replace(/invasi[oó]n/gi, 'invasion')
-    .replace(/íntimo/gi, 'intimo')
-    .replace(/[áàäâ]/gi, 'a')
-    .replace(/[éèëê]/gi, 'e')
-    .replace(/[íìïî]/gi, 'i')
-    .replace(/[óòöô]/gi, 'o')
-    .replace(/[úùüû]/gi, 'u')
-    .replace(/ñ/gi, 'n');
+    .replace(/Extorsi\?n/gi, 'Extorsión')
+    .replace(/Extorsion/gi, 'Extorsión')
+    .replace(/telef\?nica/gi, 'telefónica')
+    .replace(/telefonica/gi, 'telefónica')
+    .replace(/engano/gi, 'engaño')
+    .replace(/localizacion/gi, 'localización')
+    .replace(/operacion/gi, 'operación')
+    .replace(/invasion/gi, 'invasión')
+    .replace(/intimo/gi, 'íntimo');
 
 const getToken = () => {
   if (typeof window === 'undefined') return null;

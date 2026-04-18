@@ -66,42 +66,42 @@ class TipoExtorsion(BaseModel):
 TIPOS_EXTORSION_FALLBACK = [
     {
         "id_extortion": 1,
-        "name": "Extorsion presencial-exigencia de pago o bienes (Directa)",
+        "name": "Extorsión presencial-exigencia de pago o bienes (Directa)",
         "description": None,
     },
     {
         "id_extortion": 2,
-        "name": "Extorsion por secuestro virtual",
+        "name": "Extorsión por secuestro virtual",
         "description": None,
     },
     {
         "id_extortion": 3,
-        "name": "Extorsion telefonica-virtual-exigencia de pago o bienes (Indirecta)",
+        "name": "Extorsión telefónica-virtual-exigencia de pago o bienes (Indirecta)",
         "description": None,
     },
     {
         "id_extortion": 4,
-        "name": "Extorsion escrita-otros medios exigencia de pago o bienes (Indirecta)",
+        "name": "Extorsión escrita-otros medios exigencia de pago o bienes (Indirecta)",
         "description": None,
     },
     {
         "id_extortion": 5,
-        "name": "Fraude-engano telefonico-virtual",
+        "name": "Fraude-engaño telefónico-virtual",
         "description": None,
     },
     {
         "id_extortion": 6,
-        "name": "Denuncia de localizacion y operacion del probable extorsionador o grupo delictivo",
+        "name": "Denuncia de localización y operación del probable extorsionador o grupo delictivo",
         "description": None,
     },
     {
         "id_extortion": 7,
-        "name": "Extorsion por invasion-despojo de predio",
+        "name": "Extorsión por invasión-despojo de predio",
         "description": None,
     },
     {
         "id_extortion": 8,
-        "name": "Extorsion por contenido sexual o intimo",
+        "name": "Extorsión por contenido sexual o íntimo",
         "description": None,
     },
 ]
@@ -156,20 +156,15 @@ def _sql_normalize_text(field: str) -> str:
 def _normalize_extortion_label(value: str | None) -> str:
     text = str(value or "").strip()
     replacements = {
-        "Extorsi?n": "Extorsion",
-        "telef?nica": "telefonica",
-        "telefónica": "telefonica",
-        "engaño": "engano",
-        "localización": "localizacion",
-        "operación": "operacion",
-        "invasión": "invasion",
-        "íntimo": "intimo",
-        "á": "a",
-        "é": "e",
-        "í": "i",
-        "ó": "o",
-        "ú": "u",
-        "ñ": "n",
+        "Extorsi?n": "Extorsión",
+        "Extorsion": "Extorsión",
+        "telef?nica": "telefónica",
+        "telefonica": "telefónica",
+        "engano": "engaño",
+        "localizacion": "localización",
+        "operacion": "operación",
+        "invasion": "invasión",
+        "intimo": "íntimo",
     }
     for source, target in replacements.items():
         text = text.replace(source, target)
