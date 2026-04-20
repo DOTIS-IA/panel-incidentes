@@ -105,13 +105,6 @@ const DetalleIncidentePage = () => {
             </section>
           )}
 
-          <Seccion titulo="Identificadores">
-            <Campo label="ID conversación"  value={i.id_conv_eleven} />
-            <Campo label="ID agente"        value={i.id_agent} />
-            <Campo label="Nombre agente"    value={i.agent_name} />
-            <Campo label="ID extorsión"     value={i.id_extortion} />
-          </Seccion>
-
           <Seccion titulo="Tiempos">
             <Campo label="Fecha del evento"  value={fmt(i.event_ts)} />
             <Campo label="Inicio"            value={fmt(i.start_time)} />

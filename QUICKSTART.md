@@ -174,5 +174,23 @@ El frontend corre en `http://localhost:5173`.
 **Frontend no conecta con el backend (error de red)**
 → Verifica que `CORS_ORIGINS` en `.env` coincida exactamente con el puerto donde corre Vite (por defecto `http://localhost:5173`).
 
-**Entrar a la base de datos en docker**
+
+---
+
+## Acceso directo a la base de datos
+
+Para inspeccionar la BD desde la terminal:
+
+```bash
 docker exec -it panel-api-postgres-1 psql -U postgres -d bd_089
+```
+
+Una vez dentro de `psql`, comandos útiles:
+
+| Comando | Descripción |
+|---|---|
+| `\dt` | Listar tablas |
+| `\dv` | Listar vistas |
+| `\dn` | Listar esquemas |
+| `\d nombre_tabla` | Ver estructura de una tabla |
+| `\q` | Salir |
