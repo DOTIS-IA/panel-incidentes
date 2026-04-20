@@ -5,6 +5,7 @@ import FiltrosPage from './pages/FiltrosPage';
 import DetalleIncidentePage from './pages/DetalleIncidentePage';
 import LoginPage from './pages/LoginPage';
 import ProtectedRoute from './components/ProtectedRoute';
+import Inicio from './pages/Inicio';  
 import './App.css';
 
 function App() {
@@ -49,7 +50,7 @@ function App() {
               </div>
 
               {vista === 'vistas'     && <FiltrosPage />}
-              {vista === 'inicio'     && <div style={{padding:40}}>Inicio — en construcción</div>}
+              {vista === 'inicio'     && <Inicio/>}
               {vista === 'explorador' && <div style={{padding:40}}>Explorador — en construcción</div>}
             </main>
           </div>

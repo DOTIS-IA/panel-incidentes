@@ -2,9 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Sidebar.css';
 
-const Sidebar = ({ archivos = [], vistaActiva = 'vistas', onChangeVista, tema, onToggleTema }) => {
-  const [carpeta, setCarpeta] = useState('Archivos');
-  
+const Sidebar = ({ vistaActiva = 'vistas', onChangeVista, tema, onToggleTema }) => {
   // NUEVO: Estado para mostrar/ocultar el menú de cerrar sesión
   const [mostrarMenuSalir, setMostrarMenuSalir] = useState(false);
   const navigate = useNavigate();
@@ -93,32 +91,6 @@ const Sidebar = ({ archivos = [], vistaActiva = 'vistas', onChangeVista, tema, o
         </button>
       </nav>
 
-      {/* Selector carpeta */}
-      <div className="sidebar-folder">
-        <select
-          className="folder-select"
-          value={carpeta}
-          onChange={(e) => setCarpeta(e.target.value)}
-        >
-          <option>Archivos</option>
-          <option>Reportes</option>
-          <option>Exportados</option>
-        </select>
-      </div>
-
-      {/* Lista archivos */}
-      <ul className="sidebar-files">
-        {archivos.length === 0
-          ? ['Archivo_ejemplo', 'Archivo_ejemplo', 'Archivo_ejemplo', 'Archivo_ejemplo'].map((a, i) => (
-              <li key={i} className="file-item">{a}</li>
-            ))
-          : archivos.map((archivo, i) => (
-              <li key={i} className="file-item">{archivo}</li>
-            ))
-        }
-      </ul>
-
-      
       <div className="sidebar-user-container">
         
         {/* Panel flotante de Cerrar Sesión (solo se ve si mostrarMenuSalir es true) */}
@@ -147,7 +119,6 @@ const Sidebar = ({ archivos = [], vistaActiva = 'vistas', onChangeVista, tema, o
           </div>
         </div>
       </div>
-      
       
     </aside>
   );
