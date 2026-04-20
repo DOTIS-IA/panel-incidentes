@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useNavigate } from 'react-router-dom';
 import Sidebar from './components/Sidebar/Sidebar';
 import FiltrosPage from './pages/FiltrosPage';
 import DetalleIncidentePage from './pages/DetalleIncidentePage';
@@ -8,6 +8,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
 
 function App() {
+  const navigate = useNavigate();
   const [vista, setVista] = useState('vistas');
   const [tema, setTema]   = useState('dark');
   
@@ -64,7 +65,7 @@ function App() {
                 archivos={[]}
                 tema={tema}
                 onToggleTema={toggleTema}
-                onChangeVista={() => {}}
+                onChangeVista={(v) => { setVista(v); navigate('/'); }}
               />
             </div>
             <main className="app-main">
