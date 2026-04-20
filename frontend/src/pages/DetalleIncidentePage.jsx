@@ -112,11 +112,21 @@ const DetalleIncidentePage = () => {
             <Campo label="Duración"          value={fmtDuration(i.duration_secs)} />
           </Seccion>
 
+          <section className="detalle-seccion">
+            <h2 className="seccion-titulo">Datos de la denuncia</h2>
+            <div className="seccion-grid denuncia-grid">
+              <div className="denuncia-modo">
+                <Campo label="Modo" value={i.mode} />
+              </div>
+              <div className="denuncia-meta">
+                <Campo label="Hora del reporte" value={i.time_rep} />
+                <Campo label="Lugar"            value={i.place} />
+              </div>
+            </div>
+          </section>
+
           <Seccion titulo="Datos del reporte">
             <Campo label="Fecha de reporte"  value={fmtDate(i.report_date)} />
-            <Campo label="Modalidad"         value={i.mode} />
-            <Campo label="Hora del reporte"  value={i.time_rep} />
-            <Campo label="Lugar"             value={i.place} />
             <Campo label="Teléfono"          value={i.phone} />
             <Campo label="Rol del llamante"  value={i.caller_role} />
             <Campo label="Vía de contacto"   value={i.contact_via} />
