@@ -166,6 +166,31 @@
   gap: 20px;
 }
 
+/* Sección denuncia — modalidad ancha + meta en columna */
+.denuncia-grid {
+  display: grid;
+  grid-template-columns: 1fr 220px;
+  gap: 24px;
+  align-items: start;
+}
+
+.denuncia-modo .campo-value {
+  line-height: 1.7;
+  white-space: pre-line;
+}
+
+.denuncia-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+@media (max-width: 768px) {
+  .denuncia-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Campos */
 .detalle-campo {
   display: flex;
