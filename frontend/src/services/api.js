@@ -1,4 +1,4 @@
-export const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8003';
+export const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 const FALLBACK_TIPOS_EXTORSION = [
   'Extorsión presencial-exigencia de pago o bienes (Directa)',
