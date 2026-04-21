@@ -114,13 +114,27 @@
   color: var(--text-secondary);
 }
 
+/* =========================================================
+   NUEVO: Estilos para el Perfil de Usuario y Cerrar Sesión
+   ========================================================= */
+
+.sidebar-user-container {
+  margin-top: auto;
+  position: relative; /* Esencial para que el panel flote arriba de esto */
+}
+
 .sidebar-user {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 16px 20px 0;
+  padding: 16px 20px 20px;
   border-top: 1px solid var(--border-soft);
-  margin-top: auto;
+  cursor: pointer; /* Cambia a manita */
+  transition: background 0.2s ease;
+}
+
+.sidebar-user:hover {
+  background: var(--bg-hover); /* Pequeño efecto al pasar el mouse por el perfil */
 }
 
 .user-avatar {
@@ -150,4 +164,40 @@
 .user-email {
   font-size: 11px;
   color: var(--text-muted);
+}
+
+/* El panel flotante (Cerrar sesión) */
+.logout-popover {
+  position: absolute;
+  bottom: 100%; 
+  left: 12px;
+  right: 12px;
+  margin-bottom: 8px; /* Espacio para que no quede pegado */
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px;
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.2);
+  z-index: 50;
+}
+
+.logout-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 12px;
+  background: transparent;
+  color: #EF4444; /* Color rojo de advertencia */
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.2s;
+}
+
+.logout-btn:hover {
+  background: rgba(239, 68, 68, 0.1); /* Rojito transparente al pasar el mouse */
 }
