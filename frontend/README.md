@@ -1,16 +1,68 @@
-# React + Vite
+# Panel Incidentes — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Interfaz React para el panel operativo de incidentes de extorsión. Consume la API FastAPI del directorio `backend/api/`.
 
-Currently, two official plugins are available:
+## Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **React 19** + **Vite 8**
+- **react-router-dom 7** para navegación
+- Autenticación JWT guardada en `localStorage`
 
-## React Compiler
+## Requisitos
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- Node.js 20.19+ ó 22 LTS
+- API corriendo en `http://localhost:8000` (ver `backend/api/`)
 
-## Expanding the ESLint configuration
+## Configuración
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Crea `frontend/.env` antes de arrancar:
+
+```
+VITE_API_URL=http://localhost:8000
+```
+
+Sin este archivo el frontend apunta a `http://localhost:8003` y todas las peticiones fallarán.
+
+## Comandos
+
+```bash
+npm install       # instalar dependencias
+npm run dev       # servidor de desarrollo → http://localhost:5173
+npm run build     # build de producción
+npm run lint      # ESLint
+npm run preview   # previsualizar build
+```
+
+## Estructura relevante
+
+```
+src/
+├── App.jsx                  # Rutas y estado compartido (vista, tema, sidebar)
+├── components/
+│   ├── Sidebar/             # Navegación lateral
+│   └── ProtectedRoute.jsx   # Redirige a /login si no hay token
+├── pages/
+│   ├── LoginPage.jsx
+│   ├── FiltrosPage.jsx      # Vista principal con filtros y tabla
+│   └── DetalleIncidentePage.jsx
+├── hooks/
+│   └── useIncidentes.js     # Estado de carga/error para listado
+└── services/
+    └── api.js               # Todas las llamadas al backend
+```
+
+## Rutas
+
+| Ruta | Componente | Descripción |
+|------|------------|-------------|
+| `/login` | `LoginPage` | Formulario de acceso |
+| `/` | `FiltrosPage` | Panel principal con filtros |
+| `/incidente/:id` | `DetalleIncidentePage` | Detalle de un incidente |
+
+## Sesión
+
+El token se guarda en `localStorage` con la clave `token`. Para cerrar sesión manualmente desde devtools:
+
+```js
+localStorage.clear()
+```

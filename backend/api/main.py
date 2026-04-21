@@ -63,6 +63,50 @@ class TipoExtorsion(BaseModel):
     description: str | None
 
 
+TIPOS_EXTORSION_FALLBACK = [
+    {
+        "id_extortion": 1,
+        "name": "Extorsión presencial-exigencia de pago o bienes (Directa)",
+        "description": None,
+    },
+    {
+        "id_extortion": 2,
+        "name": "Extorsión por secuestro virtual",
+        "description": None,
+    },
+    {
+        "id_extortion": 3,
+        "name": "Extorsión telefónica-virtual-exigencia de pago o bienes (Indirecta)",
+        "description": None,
+    },
+    {
+        "id_extortion": 4,
+        "name": "Extorsión escrita-otros medios exigencia de pago o bienes (Indirecta)",
+        "description": None,
+    },
+    {
+        "id_extortion": 5,
+        "name": "Fraude-engaño telefónico-virtual",
+        "description": None,
+    },
+    {
+        "id_extortion": 6,
+        "name": "Denuncia de localización y operación del probable extorsionador o grupo delictivo",
+        "description": None,
+    },
+    {
+        "id_extortion": 7,
+        "name": "Extorsión por invasión-despojo de predio",
+        "description": None,
+    },
+    {
+        "id_extortion": 8,
+        "name": "Extorsión por contenido sexual o íntimo",
+        "description": None,
+    },
+]
+
+
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str
@@ -107,6 +151,24 @@ def _sql_normalize_text(field: str) -> str:
         "'ÁÀÄÂÉÈËÊÍÌÏÎÓÒÖÔÚÙÜÛÑáàäâéèëêíìïîóòöôúùüûñ',"
         "'AAAAEEEEIIIIOOOOUUUUNaaaaeeeeiiiioooouuuun'))"
     )
+
+
+def _normalize_extortion_label(value: str | None) -> str:
+    text = str(value or "").strip()
+    replacements = {
+        "Extorsi?n": "Extorsión",
+        "Extorsion": "Extorsión",
+        "telef?nica": "telefónica",
+        "telefonica": "telefónica",
+        "engano": "engaño",
+        "localizacion": "localización",
+        "operacion": "operación",
+        "invasion": "invasión",
+        "intimo": "íntimo",
+    }
+    for source, target in replacements.items():
+        text = text.replace(source, target)
+    return text
 
 
 @asynccontextmanager
@@ -255,7 +317,20 @@ async def get_extortion_types(_: UsuarioActual = Depends(get_usuario_actual)):
             cur = conn.execute(sql)
             cols = [desc[0] for desc in cur.description]
             rows = cur.fetchall()
-            return [dict(zip(cols, row)) for row in rows]
+            tipos = [dict(zip(cols, row)) for row in rows]
+            tipos = [
+                {
+                    **item,
+                    "name": _normalize_extortion_label(item.get("name")),
+                    "description": _normalize_extortion_label(item.get("description")) or None,
+                }
+                for item in tipos
+            ]
+
+            catalogo_invalido = len(tipos) < len(TIPOS_EXTORSION_FALLBACK) or any(
+                "?" in item["name"] or not item["name"] for item in tipos
+            )
+            return TIPOS_EXTORSION_FALLBACK if catalogo_invalido else tipos
         except Exception as e:
             raise HTTPException(status_code=503, detail=f"DB error: {e}")
 

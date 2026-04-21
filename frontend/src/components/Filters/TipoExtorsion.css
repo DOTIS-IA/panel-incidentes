@@ -1,52 +1,96 @@
 .tipo-extorsion {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 14px;
   width: 100%;
 }
 
+.tipo-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 .tipo-label {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.tipo-helper {
+  margin: 0;
   font-size: 13px;
-  font-weight: 600;
-  color: var(--text-secondary);
+  color: var(--text-muted);
 }
 
 .tipo-lista {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  display: flex;
+  flex-direction: column;
   gap: 10px;
 }
 
 .tipo-btn {
   width: 100%;
-  min-height: 64px;
-  padding: 14px 16px;
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  align-items: stretch;
+  padding: 0;
   border: 1px solid var(--border);
   border-radius: 12px;
-  background: var(--bg-surface);
-  font-size: 13.5px;
-  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text-primary);
   cursor: pointer;
   text-align: left;
-  transition: all 0.15s;
-  line-height: 1.4;
+  overflow: hidden;
+  transition: all 0.18s ease;
 }
 
 .tipo-btn:hover {
   border-color: var(--color-primary);
-  background: var(--bg-hover);
-  color: var(--color-primary);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.16);
 }
 
 .tipo-btn.selected {
   border-color: var(--color-primary);
-  background: var(--color-primary);
+  box-shadow: 0 0 0 1px rgba(225, 29, 29, 0.25);
+}
+
+.tipo-index {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.03);
+  border-right: 1px solid var(--border);
+  font-size: 15px;
+  font-weight: 700;
+  color: #9fb3d1;
+}
+
+.tipo-texto {
+  display: flex;
+  align-items: center;
+  min-height: 56px;
+  padding: 0 16px;
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.tipo-btn.selected .tipo-index {
   color: #fff;
-  font-weight: 600;
+  background: rgba(225, 29, 29, 0.22);
+}
+
+.tipo-btn.selected .tipo-texto {
+  color: #fff;
 }
 
 @media (max-width: 900px) {
-  .tipo-lista {
-    grid-template-columns: 1fr;
+  .tipo-btn {
+    grid-template-columns: 56px minmax(0, 1fr);
+  }
+
+  .tipo-texto {
+    font-size: 14px;
   }
 }
