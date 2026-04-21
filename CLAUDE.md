@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Panel Incidentes** is an operational incident panel for extortion/organized crime intelligence. It complements an existing analytical dashboard (`mas089-auth` + Streamlit in a separate repo). This project exposes a FastAPI backend consumed by a React frontend, allowing analysts to review cases one by one.
+**Panel Incidentes** is an operational incident panel for extortion/organized crime intelligence. It exposes a FastAPI backend consumed by a React frontend, allowing analysts to review cases one by one. It complements an existing analytical dashboard (`mas089-auth` + Streamlit in a separate repo) but manages its own auth independently.
 
 ## Repository Structure
 
@@ -22,8 +22,18 @@ panel-incidentes/
 │       └── create_app_roles.sql
 └── frontend/
     ├── src/
-    │   ├── main.jsx
-    │   └── App.jsx
+    │   ├── App.jsx                    # Routes + shared state (vista, tema, sidebarAbierta)
+    │   ├── components/
+    │   │   ├── Sidebar/
+    │   │   └── ProtectedRoute.jsx
+    │   ├── pages/
+    │   │   ├── FiltrosPage.jsx
+    │   │   ├── DetalleIncidentePage.jsx
+    │   │   └── LoginPage.jsx
+    │   ├── hooks/
+    │   │   └── useIncidentes.js       # wraps incidentesService with loading/error state
+    │   └── services/
+    │       └── api.js                 # BASE_URL, incidentesService, token handling
     ├── package.json
     └── vite.config.js
 ```
@@ -44,14 +54,15 @@ docker-compose up
 ```bash
 cd backend/api
 
-# Activate virtual environment
-.panel/Scripts/activate        # Windows
-source .panel/bin/activate     # Linux/Mac
+# Windows
+.panel\Scripts\activate
+# Linux/Mac
+source .panel/bin/activate
 
 pip install -r requirements.txt
 python -m uvicorn main:app --reload
-# API runs on http://localhost:8000
-# Auto-generated docs at http://localhost:8000/docs
+# API on http://localhost:8000
+# Swagger docs at http://localhost:8000/docs
 ```
 
 ### Frontend
@@ -59,42 +70,55 @@ python -m uvicorn main:app --reload
 ```bash
 cd frontend
 npm install
-npm run dev
-# React runs on http://localhost:5173
+npm run dev     # http://localhost:5173
+npm run lint    # ESLint check
+npm run build   # production build
 ```
 
 ### Environment Setup
 
-Create `backend/api/.env`:
+**Backend** — create `backend/api/.env`:
 ```
 DB_HOST=localhost
 DB_PORT=5433
 DB_NAME=bd_089
 DB_USER=postgres
 DB_PASSWORD=postgres
-JWT_SECRET_KEY=<generate with: python -c "import secrets; print(secrets.token_hex(32))">
+JWT_SECRET_KEY=<python -c "import secrets; print(secrets.token_hex(32))">
 JWT_EXPIRE_HOURS=8
 ```
+
+**Frontend** — create `frontend/.env`:
+```
+VITE_API_URL=http://localhost:8000
+```
+Without this file, `api.js` defaults to `http://localhost:8003`, causing `ERR_CONNECTION_REFUSED`.
 
 ## Architecture
 
 ```
 React (Vite, port 5173)
-  └── fetch (react-router-dom for routing)
+  └── fetch via incidentesService (api.js)
         └── FastAPI (main.py, port 8000)
               ├── CORSMiddleware — allows localhost:5173
               ├── OAuth2PasswordBearer — extracts JWT from Authorization header
               ├── psycopg_pool (sync pool, min=1, max=10)
               └── PostgreSQL 16 (Docker, port 5433)
-                    ├── public schema   — core tables (users, extortion_type) + operational views
-                    └── analytics schema — panel-specific views
+                    ├── public schema   — users, extortion_type
+                    └── analytics schema — vw_report_conversation_panel
 ```
 
-**Authentication:** Self-contained JWT using `public.users` table (migration `20260407_001`). Roles: `admin`, `monitor`, `operativo`. JWT signed with `JWT_SECRET_KEY` (HS256, configurable expiry). Does **not** depend on `mas089-auth` — this project manages its own users.
+**Authentication:** JWT via `public.users` table. Roles: `admin`, `monitor`, `operativo`. `ProtectedRoute` checks `localStorage.getItem('token')`. On 401, `api.js` clears all token keys and redirects to `/login`. To force re-login during development, run `localStorage.clear()` in browser devtools.
 
 **DB roles:**
 - `mas089_sync_rw` — INSERT/UPDATE (AI sync pipeline, external)
 - `mas089_dashboard_ro` — SELECT on tables and all views (this API uses this role)
+
+**Routing & state (App.jsx):** Two routes share state (`vista`, `tema`, `sidebarAbierta`) defined in `App`:
+- `/` — renders `FiltrosPage`, `Inicio`, or `Explorador` based on `vista` state
+- `/incidente/:id` — renders `DetalleIncidentePage`; its Sidebar receives `onChangeVista={(v) => { setVista(v); navigate('/'); }}` so sidebar navigation works from the detail page
+
+**Data flow:** `useIncidentes` hook wraps `incidentesService` with loading/error state. Detail page calls `incidentesService.getById` directly.
 
 ## API Endpoints
 
@@ -105,19 +129,23 @@ All endpoints except `/health` and `/auth/login` require `Authorization: Bearer 
 | `POST` | `/auth/login` | No | OAuth2 form login → returns JWT + role |
 | `GET` | `/health` | No | DB connectivity check |
 | `GET` | `/data` | Yes | List incidentes from `analytics.vw_report_conversation_panel` |
-| `GET` | `/data/{id_conv}` | Yes | Single incidente detail — returns 404 if not found |
-| `GET` | `/extortion-types` | Yes | Catalog from `public.extortion_type` — used to populate filters |
+| `GET` | `/data/{id_conv}` | Yes | Single incidente detail — 404 if not found |
+| `GET` | `/extortion-types` | Yes | Catalog from `public.extortion_type` |
+| `POST` | `/users` | Admin only | Create a new user |
 
-**`/data` query params:** `fecha` (date string), `tipo_extorsion` (int), `id_conv` (string)
+**`/data` query params:** `fecha`, `fecha_inicio`, `fecha_fin` (date strings), `hora`, `minutos` (ints), `tipo_extorsion` (string, matched by id or normalized name), `id_conv` (string).
 
-**`/auth/login` body:** `application/x-www-form-urlencoded` with `username` and `password` (OAuth2 form, not JSON).
+**`/auth/login` body:** `application/x-www-form-urlencoded` with `username` and `password`.
 
 ## Pydantic Models
 
-- `IncidenteItem` — response model for `/data` and `/data/{id_conv}`. Maps all columns of `analytics.vw_report_conversation_panel`. `transcription` is typed `Any` (jsonb with variable structure). Money fields use `Decimal`.
-- `TipoExtorsion` — response model for `/extortion-types`. All fields non-nullable (mirrors DB constraints).
-- `TokenResponse` — response for `/auth/login`: `access_token`, `token_type`, `role`.
-- `UsuarioActual` — internal model populated by `get_usuario_actual()` dependency: `username`, `role`.
+- `IncidenteItem` — all columns of `analytics.vw_report_conversation_panel`. `transcription` typed `Any` (jsonb, variable structure). Money fields use `Decimal`.
+- `TipoExtorsion` — `id_extortion`, `name`, `description`.
+- `TokenResponse` — `access_token`, `token_type`, `role`.
+- `UsuarioActual` — internal dep: `username`, `role`.
+- `UsuarioCreate` / `UsuarioResponse` — for `POST /users` (admin only).
+
+Both backend and frontend normalize `extortion_name` to fix `?` encoding artifacts that may appear in DB data.
 
 ## User Management
 
@@ -129,26 +157,23 @@ python seed_user.py --username admin --password <pass> --role admin
 # roles: admin | monitor | operativo
 ```
 
-Passwords are stored as bcrypt hashes. Never edit `password_hash` directly in the DB.
+Passwords stored as bcrypt hashes.
 
 ## Database Migrations
 
-Migrations in `backend/db/migrations/` are applied automatically by `bootstrap_db.sh` on `docker-compose up`. Naming: `YYYYMMDD_NNN_description.sql`. The baseline is `000_schema_create.sql`. Applied versions are tracked in `public.schema_migrations`.
+Applied automatically by `bootstrap_db.sh` on `docker-compose up`. Naming: `YYYYMMDD_NNN_description.sql`. Baseline is `000_schema_create.sql`. Applied versions tracked in `public.schema_migrations`.
 
-The key view for this panel is `analytics.vw_report_conversation_panel` (created in `20260408_011_...sql`) — it filters `public.vw_dashboard_base` to only rows where `report_generated = true`.
+The key view is `analytics.vw_report_conversation_panel` (migration `20260408_011`) — filters `public.vw_dashboard_base` to rows where `report_generated = true`.
 
-## Frontend Routing (in progress)
+## Line Endings
 
-The frontend uses `react-router-dom`. Install before first run:
+`.gitattributes` enforces LF for `.sh`, `.sql`, `.env`, and config files, preventing `bootstrap_db.sh` from failing inside Linux containers when cloned on Windows. After a collaborator pulls `.gitattributes` for the first time:
 
 ```bash
-cd frontend
-npm install
-npm install react-router-dom
+git rm --cached -r .
+git reset --hard HEAD
 ```
-
-Auth flow: `POST /auth/login` (form-data) → save `access_token` to `localStorage` → all subsequent fetches send `Authorization: Bearer <token>`. A `ProtectedRoute` component redirects unauthenticated users to `/login`.
 
 ## Relationship with Docker-MAS-089
 
-This project shares the same PostgreSQL database (`bd_089`) as the `Docker-MAS-089` repo (the analytical Streamlit dashboard). That repo owns the sync pipeline, the `mas089-auth` JWT microservice, and the `public` schema views. This project only reads data via `analytics` schema views and `public.extortion_type`.
+This project shares the same PostgreSQL database (`bd_089`) as the `Docker-MAS-089` repo. That repo owns the sync pipeline and the `public` schema views. This project only reads via `analytics` schema views and `public.extortion_type`.
