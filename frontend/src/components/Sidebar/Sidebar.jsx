@@ -1,11 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Sidebar.css';
+import logoSvg from '../../assets/FreeSample-Vectorizer-io-logo5.svg';
 
-const Sidebar = ({ archivos = [], vistaActiva = 'vistas', onChangeVista, tema, onToggleTema }) => {
-  const [carpeta, setCarpeta] = useState('Archivos');
-  
-  // NUEVO: Estado para mostrar/ocultar el menú de cerrar sesión
+const Sidebar = ({ vistaActiva = 'vistas', onChangeVista, tema, onToggleTema }) => {
   const [mostrarMenuSalir, setMostrarMenuSalir] = useState(false);
   const navigate = useNavigate();
 
@@ -22,9 +20,7 @@ const Sidebar = ({ archivos = [], vistaActiva = 'vistas', onChangeVista, tema, o
     }
   }
 
-  // NUEVO: Función para cerrar sesión
   const handleLogout = () => {
-    // 1. Borramos la memoria
     localStorage.removeItem('token');
     localStorage.removeItem('access_token');
     localStorage.removeItem('role');
@@ -32,7 +28,6 @@ const Sidebar = ({ archivos = [], vistaActiva = 'vistas', onChangeVista, tema, o
     sessionStorage.removeItem('token');
     sessionStorage.removeItem('access_token');
     
-    // 2. Redirigimos al Login
     window.location.href = '/login';
   };
 
@@ -41,14 +36,9 @@ const Sidebar = ({ archivos = [], vistaActiva = 'vistas', onChangeVista, tema, o
       {/* Logo */}
       <div className="sidebar-logo">
         <div className="logo-icon">
-          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-            <rect x="0" y="0" width="12" height="12" rx="3" fill="var(--color-primary)"/>
-            <rect x="16" y="0" width="12" height="12" rx="3" fill="var(--color-primary)" opacity="0.5"/>
-            <rect x="0" y="16" width="12" height="12" rx="3" fill="var(--color-primary)" opacity="0.5"/>
-            <rect x="16" y="16" width="12" height="12" rx="3" fill="var(--color-primary)"/>
-          </svg>
+          <img src={logoSvg} alt="Logo" width="160" height="160" />
         </div>
-        <span className="logo-text">Logo</span>
+        <span className="logo-text">CAD</span>
 
         {/* Botón tema */}
         <button className="tema-btn" onClick={onToggleTema} title="Cambiar tema">
@@ -93,35 +83,9 @@ const Sidebar = ({ archivos = [], vistaActiva = 'vistas', onChangeVista, tema, o
         </button>
       </nav>
 
-      {/* Selector carpeta */}
-      <div className="sidebar-folder">
-        <select
-          className="folder-select"
-          value={carpeta}
-          onChange={(e) => setCarpeta(e.target.value)}
-        >
-          <option>Archivos</option>
-          <option>Reportes</option>
-          <option>Exportados</option>
-        </select>
-      </div>
-
-      {/* Lista archivos */}
-      <ul className="sidebar-files">
-        {archivos.length === 0
-          ? ['Archivo_ejemplo', 'Archivo_ejemplo', 'Archivo_ejemplo', 'Archivo_ejemplo'].map((a, i) => (
-              <li key={i} className="file-item">{a}</li>
-            ))
-          : archivos.map((archivo, i) => (
-              <li key={i} className="file-item">{archivo}</li>
-            ))
-        }
-      </ul>
-
-      
       <div className="sidebar-user-container">
         
-        {/* Panel flotante de Cerrar Sesión (solo se ve si mostrarMenuSalir es true) */}
+        {/* Panel flotante de Cerrar Sesión */}
         {mostrarMenuSalir && (
           <div className="logout-popover">
             <button className="logout-btn" onClick={handleLogout}>
@@ -147,7 +111,6 @@ const Sidebar = ({ archivos = [], vistaActiva = 'vistas', onChangeVista, tema, o
           </div>
         </div>
       </div>
-      
       
     </aside>
   );
