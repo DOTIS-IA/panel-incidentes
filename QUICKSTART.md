@@ -24,6 +24,17 @@ git clone https://github.com/DOTIS-IA/panel-incidentes.git
 cd panel-incidentes
 ```
 
+### Normalizar line endings (solo la primera vez en Windows)
+
+El proyecto incluye un `.gitattributes` que fuerza LF en scripts `.sh` y `.sql`. Después de clonar, ejecuta:
+
+```bash
+git rm --cached -r .
+git reset --hard HEAD
+```
+
+Esto evita que `bootstrap_db.sh` falle dentro del contenedor Linux.
+
 ---
 
 ## Paso 2 — Base de datos (Docker)
@@ -108,7 +119,7 @@ pip install -r requirements.txt
 python seed_user.py --username admin --password <tu_contraseña> --role admin
 ```
 
-> `seed_user.py` está en `.gitignore` — cada colaborador lo crea localmente. El archivo está documentado en `CLAUDE.md`.
+> `seed_user.py` está en `.gitignore` — cada colaborador lo crea localmente.
 
 ### 3.5 — Levantar la API
 
@@ -128,8 +139,23 @@ http://localhost:8000/docs    → Swagger UI con todos los endpoints
 
 Abre una terminal nueva.
 
+### 4.1 — Crear el archivo `.env`
+
 ```bash
 cd frontend
+```
+
+Crea el archivo `frontend/.env`:
+
+```
+VITE_API_URL=http://localhost:8000
+```
+
+> Sin este archivo el frontend apunta a `http://localhost:8003` y todas las peticiones fallarán con `ERR_CONNECTION_REFUSED`.
+
+### 4.2 — Instalar y arrancar
+
+```bash
 npm install
 npm run dev
 ```
@@ -159,11 +185,28 @@ El frontend corre en `http://localhost:5173`.
 
 ## Solución de problemas comunes
 
+**`ERR_CONNECTION_REFUSED` en todas las peticiones**
+→ Falta el archivo `frontend/.env` con `VITE_API_URL=http://localhost:8000`. Créalo y reinicia Vite.
+
 **`503 Service Unavailable` al hacer login**
 → El contenedor de Docker no está corriendo. Ejecuta `docker-compose up` en `backend/db`.
 
 **`relation "public.users" does not exist`**
-→ Las migraciones no se aplicaron. Corre `docker-compose down && docker-compose up` para aplicarlas.
+→ Las migraciones no se aplicaron. Corre `docker-compose down -v && docker-compose up`.
+
+**`bootstrap_db.sh: set: Illegal option -` en Docker**
+→ El script tiene line endings CRLF. Ejecuta `git rm --cached -r . && git reset --hard HEAD` y vuelve a levantar Docker.
+
+**`No module named uvicorn` o `No module named pip`**
+→ El entorno virtual está corrupto (suele pasar tras actualizar Python). Recréalo:
+```bash
+deactivate
+Remove-Item -Recurse -Force .panel   # PowerShell
+python -m venv .panel
+.panel\Scripts\activate
+python -m ensurepip --upgrade
+pip install -r requirements.txt
+```
 
 **`ModuleNotFoundError: No module named 'pydantic_core'`**
 → El entorno virtual fue creado con otra versión de Python. Borra `.panel/`, créalo de nuevo y reinstala.
@@ -172,8 +215,10 @@ El frontend corre en `http://localhost:5173`.
 → El usuario no existe. Vuelve a correr `python seed_user.py --username admin --password <pass> --role admin`.
 
 **Frontend no conecta con el backend (error de red)**
-→ Verifica que `CORS_ORIGINS` en `.env` coincida exactamente con el puerto donde corre Vite (por defecto `http://localhost:5173`).
+→ Verifica que `CORS_ORIGINS` en `backend/api/.env` coincida exactamente con el puerto donde corre Vite (por defecto `http://localhost:5173`).
 
+**Entra directo al panel sin pedir login**
+→ Hay un token viejo en el navegador. Abre devtools y ejecuta `localStorage.clear()`, luego recarga.
 
 ---
 
