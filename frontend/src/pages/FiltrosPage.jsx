@@ -5,7 +5,6 @@ import DateRangePicker from '../components/Filters/DateRangePicker';
 import TipoExtorsion from '../components/Filters/TipoExtorsion';
 import { useIncidentes } from '../hooks/useIncidentes';
 import { incidentesService } from '../services/api';
-import { guardarReporteEnCache } from '../utils/Reportescache';
 import './FiltrosPage.css';
 
 const formatDateTime = (value) => {
@@ -65,14 +64,6 @@ const FiltrosPage = () => {
     };
   }, []);
 
-
-const handleGenerar = async () => {
-  const resultado = await generarReporte(filtros);
-  const lista = Array.isArray(resultado) ? resultado : [];
-  setResultados(lista);
-  setConsultado(true);
-  guardarReporteEnCache(filtros, lista); // ← esta línea faltaba
-};
   const limpiarFiltros = () => {
     setFiltros({
       horaInicio: '09',
