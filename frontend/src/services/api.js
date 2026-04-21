@@ -1,4 +1,4 @@
-export const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+export const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8003';
 
 const FALLBACK_TIPOS_EXTORSION = [
   'Extorsión presencial-exigencia de pago o bienes (Directa)',
@@ -10,6 +10,18 @@ const FALLBACK_TIPOS_EXTORSION = [
   'Extorsión por invasión-despojo de predio',
   'Extorsión por contenido sexual o íntimo',
 ];
+
+const normalizeExtortionLabel = (value) =>
+  String(value || '')
+    .replace(/Extorsi\?n/gi, 'Extorsión')
+    .replace(/Extorsion/gi, 'Extorsión')
+    .replace(/telef\?nica/gi, 'telefónica')
+    .replace(/telefonica/gi, 'telefónica')
+    .replace(/engano/gi, 'engaño')
+    .replace(/localizacion/gi, 'localización')
+    .replace(/operacion/gi, 'operación')
+    .replace(/invasion/gi, 'invasión')
+    .replace(/intimo/gi, 'íntimo');
 
 const getToken = () => {
   if (typeof window === 'undefined') return null;
@@ -37,32 +49,22 @@ const buildHeaders = (extraHeaders = {}) => {
 };
 
 const handleResponse = async (res) => {
-  // Validación de seguridad para cuando el token expira o es inválido
   if (res.status === 401) {
-    console.warn("Token caducado o inválido. Redirigiendo al login...");
-    
-    // Limpiamos todo rastro de sesión vieja
     window.localStorage.removeItem('token');
     window.localStorage.removeItem('access_token');
     window.localStorage.removeItem('authToken');
     window.localStorage.removeItem('role');
-    
     window.sessionStorage.removeItem('token');
     window.sessionStorage.removeItem('access_token');
-
-    // Mandamos al usuario a la pantalla de login
     window.location.href = '/login';
-    
-    // Detenemos la ejecución
-    throw new Error('Sesión expirada');
+    throw new Error('Sesion expirada');
   }
 
-  // Manejo de otros errores
   if (!res.ok) {
     const error = await res.json().catch(() => ({ detail: 'Error desconocido' }));
     throw new Error(error.detail || `Error ${res.status}`);
   }
-  
+
   return res.json();
 };
 
@@ -71,13 +73,14 @@ export const incidentesService = {
     const params = new URLSearchParams();
 
     if (filtros.id) {
-      // Búsqueda por ID exacto — ignorar todos los demás filtros
       params.append('id_conv', filtros.id);
     } else {
       if (filtros.fechaInicio) params.append('fecha_inicio', filtros.fechaInicio);
       if (filtros.fechaFin) params.append('fecha_fin', filtros.fechaFin);
-      if (filtros.hora) params.append('hora', filtros.hora);
-      if (filtros.minutos) params.append('minutos', filtros.minutos);
+      if (filtros.horaInicio) params.append('hora_inicio', filtros.horaInicio);
+      if (filtros.minutosInicio) params.append('minutos_inicio', filtros.minutosInicio);
+      if (filtros.horaFin) params.append('hora_fin', filtros.horaFin);
+      if (filtros.minutosFin) params.append('minutos_fin', filtros.minutosFin);
       if (filtros.tipoExtorsion) params.append('tipo_extorsion', filtros.tipoExtorsion);
     }
 
@@ -103,8 +106,11 @@ export const incidentesService = {
         headers: buildHeaders(),
       });
       const data = await handleResponse(res);
-      const tipos = Array.isArray(data) ? data.map((item) => item.name).filter(Boolean) : [];
-      return tipos.length > 0 ? tipos : FALLBACK_TIPOS_EXTORSION;
+      const tipos = Array.isArray(data)
+        ? data.map((item) => normalizeExtortionLabel(item.name)).filter(Boolean)
+        : [];
+      const catalogoInvalido = tipos.length < FALLBACK_TIPOS_EXTORSION.length || tipos.some((tipo) => tipo.includes('?'));
+      return catalogoInvalido ? FALLBACK_TIPOS_EXTORSION : tipos;
     } catch {
       return FALLBACK_TIPOS_EXTORSION;
     }
