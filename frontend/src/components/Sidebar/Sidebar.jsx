@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Sidebar.css';
+import logoSvg from '../../assets/FreeSample-Vectorizer-io-logo5.svg';
 
 const Sidebar = ({ vistaActiva = 'vistas', onChangeVista, tema, onToggleTema }) => {
-  // NUEVO: Estado para mostrar/ocultar el menú de cerrar sesión
   const [mostrarMenuSalir, setMostrarMenuSalir] = useState(false);
   const navigate = useNavigate();
 
@@ -20,9 +20,7 @@ const Sidebar = ({ vistaActiva = 'vistas', onChangeVista, tema, onToggleTema }) 
     }
   }
 
-  // NUEVO: Función para cerrar sesión
   const handleLogout = () => {
-    // 1. Borramos la memoria
     localStorage.removeItem('token');
     localStorage.removeItem('access_token');
     localStorage.removeItem('role');
@@ -30,7 +28,6 @@ const Sidebar = ({ vistaActiva = 'vistas', onChangeVista, tema, onToggleTema }) 
     sessionStorage.removeItem('token');
     sessionStorage.removeItem('access_token');
     
-    // 2. Redirigimos al Login
     window.location.href = '/login';
   };
 
@@ -39,14 +36,9 @@ const Sidebar = ({ vistaActiva = 'vistas', onChangeVista, tema, onToggleTema }) 
       {/* Logo */}
       <div className="sidebar-logo">
         <div className="logo-icon">
-          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-            <rect x="0" y="0" width="12" height="12" rx="3" fill="var(--color-primary)"/>
-            <rect x="16" y="0" width="12" height="12" rx="3" fill="var(--color-primary)" opacity="0.5"/>
-            <rect x="0" y="16" width="12" height="12" rx="3" fill="var(--color-primary)" opacity="0.5"/>
-            <rect x="16" y="16" width="12" height="12" rx="3" fill="var(--color-primary)"/>
-          </svg>
+          <img src={logoSvg} alt="Logo" width="160" height="160" />
         </div>
-        <span className="logo-text">Logo</span>
+        <span className="logo-text">CAD</span>
 
         {/* Botón tema */}
         <button className="tema-btn" onClick={onToggleTema} title="Cambiar tema">
@@ -93,7 +85,7 @@ const Sidebar = ({ vistaActiva = 'vistas', onChangeVista, tema, onToggleTema }) 
 
       <div className="sidebar-user-container">
         
-        {/* Panel flotante de Cerrar Sesión (solo se ve si mostrarMenuSalir es true) */}
+        {/* Panel flotante de Cerrar Sesión */}
         {mostrarMenuSalir && (
           <div className="logout-popover">
             <button className="logout-btn" onClick={handleLogout}>
