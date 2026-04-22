@@ -12,7 +12,27 @@ const LoginPage = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (localStorage.getItem('token')) navigate('/', { replace: true });
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      if (!payload.exp || payload.exp * 1000 > Date.now()) {
+        navigate('/', { replace: true });
+        return;
+      }
+    } catch {
+      // Token corrupto: limpiar sesion y permitir que aparezca el login.
+    }
+
+    localStorage.removeItem('token');
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('role');
+    localStorage.removeItem('username');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('access_token');
+    sessionStorage.removeItem('authToken');
   }, [navigate]);
 
   const handleSubmit = async (e) => {
