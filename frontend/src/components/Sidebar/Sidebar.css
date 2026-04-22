@@ -13,43 +13,43 @@
 }
 .sidebar-logo {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 10px;
-  padding: 0 20px 24px;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px 20px;
   border-bottom: 1px solid var(--border-soft);
-  height: 72px;
-  min-height: 72px;
-  overflow: hidden;
-  flex-shrink: 0;
-}
-
-.sidebar-logo {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 0 20px 24px;
-  border-bottom: 1px solid var(--border-soft);
-  height: 100px;       
-  min-height: 100px;   
-  overflow: hidden;
+  min-height: 176px;
+  position: relative;
   flex-shrink: 0;
 }
 .logo-icon {
-  width: 64px;         
-  height: 64px;        
-  min-width: 64px;     
+  width: 96px;
+  height: 96px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
+.logo-icon img {
+  width: 96px;
+  height: 96px;
+  object-fit: contain;
+}
+
 .logo-text {
-  font-size: 16px;
-  font-weight: 600;
+  max-width: 176px;
+  font-size: 13px;
+  line-height: 1.25;
+  font-weight: 700;
   color: var(--text-primary);
-  flex: 1;
+  text-align: center;
+  letter-spacing: 0.02em;
 }
 .tema-btn {
+  position: absolute;
+  top: 18px;
+  right: 16px;
   background: none;
   border: none;
   cursor: pointer;

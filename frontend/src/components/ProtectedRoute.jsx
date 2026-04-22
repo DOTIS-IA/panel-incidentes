@@ -1,12 +1,34 @@
 import { Navigate } from 'react-router-dom';
 
-// Envuelve cualquier página que requiera autenticación.
-// Si no hay token en localStorage → redirige a /login.
-// Si hay token → muestra el contenido normalmente.
+const clearSession = () => {
+  localStorage.removeItem('token');
+  localStorage.removeItem('access_token');
+  localStorage.removeItem('authToken');
+  localStorage.removeItem('role');
+  localStorage.removeItem('username');
+  sessionStorage.removeItem('token');
+  sessionStorage.removeItem('access_token');
+  sessionStorage.removeItem('authToken');
+};
+
+const isValidToken = (token) => {
+  if (!token) return false;
+
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    if (!payload.exp) return true;
+
+    return payload.exp * 1000 > Date.now();
+  } catch {
+    return false;
+  }
+};
+
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem('token');
 
-  if (!token) {
+  if (!isValidToken(token)) {
+    clearSession();
     return <Navigate to="/login" replace />;
   }
 
