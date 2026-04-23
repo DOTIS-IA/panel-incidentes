@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { obtenerReportes, eliminarReporte, limpiarReportes } from '../utils/Reportescache';
 import './Inicio.css';
@@ -36,12 +36,8 @@ const formatFiltros = (filtros) => {
 
 const Inicio = () => {
   const navigate = useNavigate();
-  const [reportes, setReportes] = useState([]);
+  const [reportes, setReportes] = useState(() => obtenerReportes());
   const [expandido, setExpandido] = useState(null);
-
-  useEffect(() => {
-    setReportes(obtenerReportes());
-  }, []);
 
   const handleEliminar = (id, event) => {
     event.stopPropagation();
