@@ -1,0 +1,6 @@
+.panel/
+__pycache__/
+*.pyc
+*.pyo
+.env
+seed_user.py
