@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import './Sidebar.css';
-import logoSvg from '../../assets/FreeSample-Vectorizer-io-logo5.svg';
+import logoImg from '../../assets/escudo-hd.png';
 
 const Sidebar = ({ vistaActiva = 'vistas', onChangeVista, tema, onToggleTema }) => {
   const [mostrarMenuSalir, setMostrarMenuSalir] = useState(false);
@@ -33,9 +33,9 @@ const Sidebar = ({ vistaActiva = 'vistas', onChangeVista, tema, onToggleTema }) 
     <aside className="sidebar">
       <div className="sidebar-logo">
         <div className="logo-icon">
-          <img src={logoSvg} alt="Logo" width="160" height="160" />
+          <img src={logoImg} alt="Logo" width="160" height="160" />
         </div>
-        <span className="logo-text">CAD</span>
+        <span className="logo-text">Panel de Incidentes de Extorsión</span>
 
         <button className="tema-btn" onClick={onToggleTema} title="Cambiar tema">
           {tema === 'dark' ? '☀️' : '🌙'}
