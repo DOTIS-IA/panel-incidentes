@@ -173,6 +173,40 @@ El frontend corre en `http://localhost:5173`.
 
 ---
 
+## Paso 6 — Frontend en Docker
+
+Si quieres correr solo el frontend dentro de Docker, usa estos comandos desde la raíz del repositorio:
+
+```bash
+docker build -t panel-frontend --build-arg VITE_API_URL=http://localhost:8000 ./frontend
+docker run -d -p 3000:80 --name panel-frontend panel-frontend
+```
+
+El frontend quedará disponible en:
+
+```text
+http://localhost:3000
+```
+
+### Validaciones recomendadas
+
+1. Abre `http://localhost:3000`
+2. Verifica que cargue `/login`
+3. Refresca en `/login` para confirmar que Nginx no devuelve `404`
+4. Prueba una ruta interna como `/incidente/123`
+
+### Nota sobre CORS
+
+Si el frontend en Docker no puede hacer login contra `http://localhost:8000`, revisa que `backend/api/.env` incluya el origen `http://localhost:3000`:
+
+```env
+CORS_ORIGINS=http://localhost:3000,http://localhost:5173,http://localhost:5174
+```
+
+Después de cambiarlo, reinicia el backend.
+
+---
+
 ## Resumen — tres terminales
 
 | Terminal | Directorio | Comando |
