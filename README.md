@@ -26,7 +26,7 @@ El proyecto comparte la base de datos `bd_089` con el repositorio `Docker-MAS-08
 
 | Capa | Tecnología |
 |---|---|
-| Frontend | React 18, Vite, react-router-dom |
+| Frontend | React 19, Vite, react-router-dom |
 | Backend | FastAPI, Python 3.10+, psycopg3, python-jose, bcrypt |
 | Base de datos | PostgreSQL 16 |
 | Infraestructura | Docker Desktop |
