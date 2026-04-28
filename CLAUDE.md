@@ -174,6 +174,33 @@ git rm --cached -r .
 git reset --hard HEAD
 ```
 
+## Docker Deployment
+
+### Building images
+
+```bash
+# Backend
+docker build -t panel-api ./backend/api
+
+# Frontend (local test — uses default API URL)
+docker build -t panel-frontend ./frontend
+
+# Frontend (production — VITE_API_URL is baked at build time)
+docker build \
+  --build-arg VITE_API_URL=https://panel-incidentes.doti-ia.com/api \
+  -t panel-frontend ./frontend
+```
+
+### Backend environment on the server
+
+The backend container reads its DB credentials and JWT secret from environment variables. On the server, pass them via `docker-compose.yml` or a `.env` file in the same directory as the compose file. Key difference from local dev: `DB_PORT=5432` (internal Docker network port) and `DB_HOST=mas089-postgres` (container name on `database-default` network). `JWT_SECRET_KEY` must be generated once on the server and never rotated without logging out all users.
+
+### Server integration
+
+The server runs a shared `docker-compose.yml` in `Docker-MAS-089`. This project adds two services (`panel-api` and `panel-frontend`) to that compose, both joined to `mas089-net`. Nginx proxies `panel-incidentes.doti-ia.com` → frontend:80 for the SPA and `/api/` → panel-api:8000 for the backend.
+
+`backend/db/` is only needed for local development. Do not copy it to the server — the server DB already has its own migrations applied.
+
 ## Relationship with Docker-MAS-089
 
 This project shares the same PostgreSQL database (`bd_089`) as the `Docker-MAS-089` repo. That repo owns the sync pipeline and the `public` schema views. This project only reads via `analytics` schema views and `public.extortion_type`.
