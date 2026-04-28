@@ -141,16 +141,7 @@ const FiltrosPage = () => {
               onChangeFechaFin={(f) => set('fechaFin', f)}
             />
           </div>
-
-          <div className="filtros-group filtros-group-id filtros-panel-card">
-            <label className="group-label">ID</label>
-            <div className="id-badge">{filtros.id || 'Todos'}</div>
-            <p className="id-helper">
-              {filtros.id
-                ? 'La búsqueda priorizará el identificador capturado arriba.'
-                : 'Sin un ID específico, la consulta revisa todos los incidentes.'}
-            </p>
-          </div>
+        
         </div>
 
         <div className="filtros-row">
