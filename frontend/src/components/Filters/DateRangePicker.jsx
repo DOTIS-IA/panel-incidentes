@@ -65,6 +65,12 @@ const DateRangePicker = ({ fechaInicio, fechaFin, onChangeFechaInicio, onChangeF
   const handleDayClick = (day) => {
     const fecha = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 
+    if (fecha === fechaInicio || fecha === fechaFin) {
+      onChangeFechaInicio?.(null);
+      onChangeFechaFin?.(null);
+      return;
+    }
+
     if (!fechaInicio || (fechaInicio && fechaFin)) {
       onChangeFechaInicio?.(fecha);
       onChangeFechaFin?.(null);
