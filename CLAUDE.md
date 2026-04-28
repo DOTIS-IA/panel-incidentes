@@ -177,3 +177,36 @@ git reset --hard HEAD
 ## Relationship with Docker-MAS-089
 
 This project shares the same PostgreSQL database (`bd_089`) as the `Docker-MAS-089` repo. That repo owns the sync pipeline and the `public` schema views. This project only reads via `analytics` schema views and `public.extortion_type`.
+
+## Production deployment
+
+The app runs at `https://panel-incidentes.doti-ia.com` using MAS_089's nginx and Docker infrastructure. The production stack lives at `~/panel-incidentes/` on the server.
+
+**Key production files (not for local dev):**
+- `~/panel-incidentes/docker-compose.yml` — production stack (joins MAS_089's external Docker networks)
+- `~/panel-incidentes/.env` — production credentials; NOT `backend/api/.env` (that's local dev only)
+
+**Networks (external, already exist in Docker):**
+- `mas089_mas089-net` — nginx reaches the containers
+- `database_default` — API reaches `mas089-postgres`
+
+**DB role:** `mas089_panel_rw` — minimal grants: SELECT on `analytics.vw_report_conversation_panel` and `public.extortion_type`, SELECT+INSERT on `public.users`. Created by migration `20260427_027` in `Docker-MAS-089`.
+
+**Auth:** Same `public.users` table as MAS_089's Streamlit dashboard. Same credentials work on both.
+
+**nginx routing** (in `Docker-MAS-089/deployments/mas089/nginx/default.conf`):
+- `location = /api/auth/login` → `panel-incidentes-api:8000/auth/login` (rate-limited)
+- `location /api/` → strips `/api/` prefix → `panel-incidentes-api:8000`
+- `location /` → `panel-incidentes-frontend:80`
+
+All nginx upstreams use `resolver 127.0.0.11 valid=30s` + variable + `rewrite ... break` to avoid caching Docker container IPs.
+
+**Production commands:**
+```bash
+cd ~/panel-incidentes
+docker compose ps
+docker compose up -d --build    # rebuild after code changes
+docker compose restart api      # restart after .env changes only
+```
+
+**VITE_API_URL** is baked into the frontend bundle at build time as `https://panel-incidentes.doti-ia.com/api`. If the domain changes, rebuild the frontend.

@@ -1,0 +1,45 @@
+name: panel-incidentes
+
+services:
+  api:
+    build:
+      context: ./backend/api
+      dockerfile: Dockerfile
+    container_name: panel-incidentes-api
+    restart: unless-stopped
+    env_file: .env
+    expose:
+      - "8000"
+    healthcheck:
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health')\""]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - mas089-net
+      - database-default
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: https://panel-incidentes.doti-ia.com/api
+    container_name: panel-incidentes-frontend
+    restart: unless-stopped
+    expose:
+      - "80"
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - mas089-net
+
+networks:
+  mas089-net:
+    external: true
+    name: mas089_mas089-net
+  database-default:
+    external: true
+    name: database_default
