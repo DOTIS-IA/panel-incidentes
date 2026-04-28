@@ -71,6 +71,62 @@ Todos los endpoints excepto `/health` y `/auth/login` requieren `Authorization: 
 
 ---
 
+## Producción
+
+El panel corre en `https://panel-incidentes.doti-ia.com` usando la infraestructura Docker y nginx del repositorio `Docker-MAS-089`, sin modificar el stack base de ese proyecto.
+
+### Arquitectura de red en producción
+
+```
+nginx (mas089-nginx)  ← mas089_mas089-net
+  ├── /api/  → panel-incidentes-api:8000   (mas089_mas089-net + database_default)
+  └── /      → panel-incidentes-frontend:80 (mas089_mas089-net)
+
+panel-incidentes-api ─→ mas089-postgres (database_default)
+```
+
+Los contenedores se unen a redes Docker externas ya existentes; no se crea infraestructura nueva.
+
+### Stack Docker de producción
+
+El `docker-compose.yml` en la raíz del proyecto define el stack productivo. No usar el de `backend/db/` (es solo para desarrollo local con postgres propio).
+
+```bash
+cd ~/panel-incidentes
+docker compose up -d --build     # primer arranque o rebuild
+docker compose ps                 # verificar estado
+docker compose logs -f api        # logs de la API
+```
+
+### Variables de entorno en producción
+
+El `.env` de producción vive en la **raíz del proyecto** (`~/panel-incidentes/.env`), no en `backend/api/`. El `docker-compose.yml` lo carga con `env_file: .env`. El archivo `backend/api/.env` es solo para desarrollo local.
+
+Variables clave de producción:
+
+```env
+DB_HOST=postgres          # nombre del contenedor PostgreSQL en database_default
+DB_PORT=5432
+DB_NAME=bd_089
+DB_USER=mas089_panel_rw   # rol con permisos mínimos (SELECT en vistas analytics, users)
+DB_PASSWORD=<secreto>
+JWT_SECRET_KEY=<secreto diferente al de MAS_089>
+JWT_EXPIRE_HOURS=8
+CORS_ORIGINS=https://panel-incidentes.doti-ia.com
+```
+
+El rol `mas089_panel_rw` fue creado por la migración `20260427_027` del repo `Docker-MAS-089`.
+
+### Certificado TLS
+
+Gestionado por `certbot` del stack `mas089`. Válido hasta 2026-07-26, renovación automática via `certbot renew`.
+
+### Credenciales de acceso
+
+Misma tabla `public.users` de `bd_089` que usa el dashboard Streamlit de MAS_089. Las credenciales son las mismas que las del dashboard principal en `https://doti-ia.com`.
+
+---
+
 ## Instalación
 
 Ver [QUICKSTART.md](QUICKSTART.md) para instrucciones detalladas paso a paso.
