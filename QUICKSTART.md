@@ -86,6 +86,8 @@ DB_USER=postgres
 DB_PASSWORD=postgres
 JWT_SECRET_KEY=<el valor que generaste>
 JWT_EXPIRE_HOURS=8
+DATA_DEFAULT_LIMIT=500
+DATA_MAX_LIMIT=2000
 CORS_ORIGINS=http://localhost:5173
 ```
 
@@ -116,10 +118,14 @@ pip install -r requirements.txt
 ### 3.4 — Crear el primer usuario admin
 
 ```bash
-python seed_user.py --username admin --password <tu_contraseña> --role admin
+python scripts/create_user.py --username admin --email admin@example.local --password <tu_contraseña> --role admin
 ```
 
-> `seed_user.py` está en `.gitignore` — cada colaborador lo crea localmente.
+También puedes omitir `--password` para capturarla sin dejarla en el historial de la terminal:
+
+```bash
+python scripts/create_user.py --username admin --email admin@example.local --role admin
+```
 
 ### 3.5 — Levantar la API
 
@@ -151,7 +157,7 @@ Crea el archivo `frontend/.env`:
 VITE_API_URL=http://localhost:8000
 ```
 
-> Sin este archivo el frontend apunta a `http://localhost:8003` y todas las peticiones fallarán con `ERR_CONNECTION_REFUSED`.
+> Si omites este archivo, el frontend usa `http://localhost:8000` como valor por defecto. Mantenerlo explícito evita confusiones cuando cambias de entorno.
 
 ### 4.2 — Instalar y arrancar
 
@@ -217,10 +223,57 @@ Después de cambiarlo, reinicia el backend.
 
 ---
 
+## Validación rápida
+
+Con los tres servicios levantados, ejecuta:
+
+```bash
+curl http://localhost:8000/health
+```
+
+La respuesta esperada es:
+
+```json
+{"status":"ok","db":"connected"}
+```
+
+Para validar frontend:
+
+```bash
+cd frontend
+npm run lint
+npm run build
+```
+
+Para validar backend:
+
+```bash
+cd backend/api
+python -m py_compile main.py scripts/create_user.py
+```
+
+---
+
+## Relación con Docker-MAS-089
+
+En desarrollo local este Quickstart levanta una base PostgreSQL propia desde `backend/db`.
+
+En producción, `panel-incidentes` se conecta al stack principal `Docker-MAS-089`, alojado en DigitalOcean. Ese stack debe existir antes de desplegar este proyecto y debe proveer:
+
+- Red `mas089_mas089-net`, usada por nginx para alcanzar frontend y API.
+- Red `database_default`, usada por la API para alcanzar PostgreSQL.
+- Base `bd_089` con las tablas y vistas base del proyecto principal.
+- Rol `mas089_panel_rw` con permisos sobre las vistas del panel, catálogo de extorsión y tabla `public.users`.
+- Rutas nginx para `https://panel-incidentes.doti-ia.com`, enviando `/api/` a `panel-incidentes-api:8000` y `/` a `panel-incidentes-frontend:80`.
+
+Para producción usa el `docker-compose.yml` de la raíz del repo. No uses `backend/db/docker-compose.yml`, porque ese archivo es solo para desarrollo local.
+
+---
+
 ## Solución de problemas comunes
 
 **`ERR_CONNECTION_REFUSED` en todas las peticiones**
-→ Falta el archivo `frontend/.env` con `VITE_API_URL=http://localhost:8000`. Créalo y reinicia Vite.
+→ Verifica que la API esté levantada en `http://localhost:8000` y que `frontend/.env` tenga `VITE_API_URL=http://localhost:8000`.
 
 **`503 Service Unavailable` al hacer login**
 → El contenedor de Docker no está corriendo. Ejecuta `docker-compose up` en `backend/db`.
@@ -246,7 +299,7 @@ pip install -r requirements.txt
 → El entorno virtual fue creado con otra versión de Python. Borra `.panel/`, créalo de nuevo y reinstala.
 
 **`Credenciales incorrectas` aunque la contraseña es correcta**
-→ El usuario no existe. Vuelve a correr `python seed_user.py --username admin --password <pass> --role admin`.
+→ El usuario no existe. Vuelve a correr `python scripts/create_user.py --username admin --email admin@example.local --password <pass> --role admin --update`.
 
 **Frontend no conecta con el backend (error de red)**
 → Verifica que `CORS_ORIGINS` en `backend/api/.env` coincida exactamente con el puerto donde corre Vite (por defecto `http://localhost:5173`).

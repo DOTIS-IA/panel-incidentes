@@ -37,7 +37,7 @@ El proyecto comparte la base de datos `bd_089` con el repositorio `Docker-MAS-08
 ## Funcionalidades
 
 - **Autenticación** — Login con JWT, sesión guardada en `localStorage`, redirección automática a `/login` si el token expira o es inválido
-- **Panel de filtros** — Consulta de incidentes por rango de fechas, hora, tipo de extorsión o ID exacto
+- **Panel de filtros** — Consulta de incidentes por rango de fechas, rango horario, tipo de extorsión o ID exacto
 - **Vista de detalle** — Ficha completa del incidente con secciones de identificadores, tiempos, datos del reporte, montos y cuentas
 - **Transcripción** — Visualización del diálogo de la llamada en formato de chat (agente / víctima) con marca de tiempo por turno, en panel lateral fijo
 - **Roles de usuario** — `admin`, `monitor`, `operativo` con control de acceso en endpoints
@@ -57,7 +57,7 @@ Todos los endpoints excepto `/health` y `/auth/login` requieren `Authorization: 
 | `GET` | `/extortion-types` | Sí | Catálogo de tipos de extorsión |
 | `POST` | `/users` | Admin | Crear nuevo usuario |
 
-**Parámetros de `/data`:** `fecha`, `fecha_inicio`, `fecha_fin`, `hora`, `minutos`, `tipo_extorsion`, `id_conv`
+**Parámetros de `/data`:** `fecha`, `fecha_inicio`, `fecha_fin`, `hora`, `minutos`, `hora_inicio`, `minutos_inicio`, `hora_fin`, `minutos_fin`, `tipo_extorsion`, `id_conv`, `limit`
 
 ---
 
@@ -112,10 +112,22 @@ DB_USER=mas089_panel_rw   # rol con permisos mínimos (SELECT en vistas analytic
 DB_PASSWORD=<secreto>
 JWT_SECRET_KEY=<secreto diferente al de MAS_089>
 JWT_EXPIRE_HOURS=8
+DATA_DEFAULT_LIMIT=500
+DATA_MAX_LIMIT=2000
 CORS_ORIGINS=https://panel-incidentes.doti-ia.com
 ```
 
 El rol `mas089_panel_rw` fue creado por la migración `20260427_027` del repo `Docker-MAS-089`.
+
+### Dependencias del proyecto principal
+
+Antes de desplegar en producción, el stack `Docker-MAS-089` debe estar activo en DigitalOcean y debe proveer:
+
+- Red Docker `mas089_mas089-net` para que nginx alcance `panel-incidentes-frontend` y `panel-incidentes-api`.
+- Red Docker `database_default` para que la API alcance PostgreSQL.
+- Base de datos `bd_089` con las vistas base del esquema `public`.
+- Rol `mas089_panel_rw` con permisos mínimos sobre `analytics.vw_report_conversation_panel`, `public.extortion_type` y `public.users`.
+- Configuración nginx del dominio `panel-incidentes.doti-ia.com` que reenvíe `/api/` a la API y `/` al frontend.
 
 ### Certificado TLS
 
@@ -143,7 +155,7 @@ python -m venv .panel
 .\.panel\Scripts\Activate.ps1        # Windows PowerShell
 # source .panel/bin/activate         # Linux / Mac
 pip install -r requirements.txt
-python seed_user.py --username admin --password <pass> --role admin
+python scripts/create_user.py --username admin --email admin@example.local --password <pass> --role admin
 python -m uvicorn main:app --reload
 
 # 3. Frontend
@@ -168,6 +180,8 @@ DB_USER=postgres
 DB_PASSWORD=postgres
 JWT_SECRET_KEY=<generado con: python -c "import secrets; print(secrets.token_hex(32))">
 JWT_EXPIRE_HOURS=8
+DATA_DEFAULT_LIMIT=500
+DATA_MAX_LIMIT=2000
 CORS_ORIGINS=http://localhost:5173
 ```
 
@@ -180,6 +194,8 @@ panel-incidentes/
 ├── backend/
 │   ├── api/
 │   │   ├── main.py            # FastAPI — endpoints, modelos Pydantic, pool
+│   │   ├── scripts/
+│   │   │   └── create_user.py  # Alta/actualización de usuarios para bootstrap
 │   │   ├── .env               # Credenciales (nunca commitear)
 │   │   └── requirements.txt
 │   └── db/
@@ -202,12 +218,19 @@ panel-incidentes/
 
 ---
 
-## Gestión de usuarios
+## Gestión de Usuarios
 
-Los usuarios se crean con `seed_user.py` (gitignored — cada colaborador lo crea localmente):
+Los usuarios se crean con el script versionado `backend/api/scripts/create_user.py`:
 
 ```bash
-python seed_user.py --username <nombre> --password <contraseña> --role <admin|monitor|operativo>
+cd backend/api
+python scripts/create_user.py --username <nombre> --email <correo> --password <contraseña> --role <admin|monitor|operativo>
+```
+
+Para actualizar un usuario existente:
+
+```bash
+python scripts/create_user.py --username <nombre> --email <correo> --password <nueva_contraseña> --role <admin|monitor|operativo> --update
 ```
 
 Las contraseñas se almacenan como hashes bcrypt. El endpoint `POST /users` también permite crear usuarios desde el panel si se tiene rol `admin`.

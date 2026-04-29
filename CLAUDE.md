@@ -86,13 +86,15 @@ DB_USER=postgres
 DB_PASSWORD=postgres
 JWT_SECRET_KEY=<python -c "import secrets; print(secrets.token_hex(32))">
 JWT_EXPIRE_HOURS=8
+DATA_DEFAULT_LIMIT=500
+DATA_MAX_LIMIT=2000
 ```
 
 **Frontend** — create `frontend/.env`:
 ```
 VITE_API_URL=http://localhost:8000
 ```
-Without this file, `api.js` defaults to `http://localhost:8003`, causing `ERR_CONNECTION_REFUSED`.
+Without this file, `api.js` defaults to `http://localhost:8000`. Keep the file explicit when switching between local, staging, and production URLs.
 
 ## Architecture
 
@@ -133,7 +135,7 @@ All endpoints except `/health` and `/auth/login` require `Authorization: Bearer 
 | `GET` | `/extortion-types` | Yes | Catalog from `public.extortion_type` |
 | `POST` | `/users` | Admin only | Create a new user |
 
-**`/data` query params:** `fecha`, `fecha_inicio`, `fecha_fin` (date strings), `hora`, `minutos` (ints), `tipo_extorsion` (string, matched by id or normalized name), `id_conv` (string).
+**`/data` query params:** `fecha`, `fecha_inicio`, `fecha_fin` (date strings), `hora`, `minutos` (exact time ints), `hora_inicio`, `minutos_inicio`, `hora_fin`, `minutos_fin` (time range ints), `tipo_extorsion` (string, matched by id or normalized name), `id_conv` (string), `limit` (bounded result count).
 
 **`/auth/login` body:** `application/x-www-form-urlencoded` with `username` and `password`.
 
@@ -149,11 +151,12 @@ Both backend and frontend normalize `extortion_name` to fix `?` encoding artifac
 
 ## User Management
 
-`seed_user.py` (gitignored) creates users in `public.users`:
+`scripts/create_user.py` creates or updates users in `public.users`:
 
 ```bash
 cd backend/api
-python seed_user.py --username admin --password <pass> --role admin
+python scripts/create_user.py --username admin --email admin@example.local --password <pass> --role admin
+python scripts/create_user.py --username admin --email admin@example.local --password <new-pass> --role admin --update
 # roles: admin | monitor | operativo
 ```
 
