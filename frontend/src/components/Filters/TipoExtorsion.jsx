@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import './TipoExtorsion.css';
 
 const TIPOS_DEFAULT = [
@@ -24,34 +25,53 @@ const normalizeLabel = (tipo) =>
     .replace(/intimo/gi, 'íntimo');
 
 const TipoExtorsion = ({ tipos = TIPOS_DEFAULT, seleccionado, onSelect }) => {
+  const [abierto, setAbierto] = useState(false);
   const opciones = Array.isArray(tipos) && tipos.length > 0 ? tipos : TIPOS_DEFAULT;
 
   return (
     <section className="tipo-extorsion">
-      <div className="tipo-header">
-        <label className="tipo-label">Tipo de extorsión</label>
-        <p className="tipo-helper">
-          Selecciona una categoría para enfocar la consulta en un patrón específico.
-        </p>
-      </div>
+      <button
+        type="button"
+        className="tipo-toggle"
+        onClick={() => setAbierto((v) => !v)}
+      >
+        <div className="tipo-toggle-left">
+          <span className="tipo-label">Tipo de extorsión</span>
+          <span className="tipo-helper">
+            {seleccionado
+              ? normalizeLabel(seleccionado)
+              : 'Selecciona una categoría para enfocar la consulta.'}
+          </span>
+        </div>
+        <svg
+          className={`tipo-chevron ${abierto ? 'abierto' : ''}`}
+          width="16" height="16" viewBox="0 0 16 16" fill="none"
+        >
+          <path d="M4 6l4 4 4-4" stroke="#9fb3d1" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
 
-      <div className="tipo-lista">
-        {opciones.map((tipo, index) => {
-          const label = normalizeLabel(tipo);
-
-          return (
-            <button
-              key={`${index}-${label}`}
-              type="button"
-              className={`tipo-btn ${seleccionado === tipo ? 'selected' : ''}`}
-              onClick={() => onSelect?.(tipo === seleccionado ? null : tipo)}
-              title={label}
-            >
-              <span className="tipo-index">{String(index + 1).padStart(2, '0')}</span>
-              <span className="tipo-texto">{label}</span>
-            </button>
-          );
-        })}
+      <div className={`tipo-lista-wrapper ${abierto ? 'abierto' : ''}`}>
+        <div className="tipo-lista">
+          {opciones.map((tipo, index) => {
+            const label = normalizeLabel(tipo);
+            return (
+              <button
+                key={`${index}-${label}`}
+                type="button"
+                className={`tipo-btn ${seleccionado === tipo ? 'selected' : ''}`}
+                onClick={() => {
+                  onSelect?.(tipo === seleccionado ? null : tipo);
+                  setAbierto(false);
+                }}
+                title={label}
+              >
+                <span className="tipo-index">{String(index + 1).padStart(2, '0')}</span>
+                <span className="tipo-texto">{label}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
     </section>
   );

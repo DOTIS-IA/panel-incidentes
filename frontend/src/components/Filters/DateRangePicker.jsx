@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import './DateRangePicker.css';
 
-const DIAS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-const MESES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const DIAS = ['Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab', 'Dom'];
+const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
 const getDiasDelMes = (year, month) => {
   const primerDia = new Date(year, month, 1).getDay();
@@ -48,8 +48,28 @@ const DateRangePicker = ({ fechaInicio, fechaFin, onChangeFechaInicio, onChangeF
   const { ajuste, totalDias } = getDiasDelMes(viewYear, viewMonth);
   const rangeDays = getRangeDays(fechaInicio, fechaFin);
 
+  const hoyStr = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
+
+  const handleHoy = () => {
+    if (fechaInicio === hoyStr && fechaFin === hoyStr) {
+      onChangeFechaInicio?.(null);
+      onChangeFechaFin?.(null);
+    } else {
+      setViewYear(hoy.getFullYear());
+      setViewMonth(hoy.getMonth());
+      onChangeFechaInicio?.(hoyStr);
+      onChangeFechaFin?.(hoyStr);
+    }
+  };
+
   const handleDayClick = (day) => {
     const fecha = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+    if (fecha === fechaInicio || fecha === fechaFin) {
+      onChangeFechaInicio?.(null);
+      onChangeFechaFin?.(null);
+      return;
+    }
 
     if (!fechaInicio || (fechaInicio && fechaFin)) {
       onChangeFechaInicio?.(fecha);
@@ -112,6 +132,16 @@ const DateRangePicker = ({ fechaInicio, fechaFin, onChangeFechaInicio, onChangeF
         <button onClick={prevMonth} className="nav-btn">&#8249;</button>
         <span>{MESES[viewMonth]} {viewYear}</span>
         <button onClick={nextMonth} className="nav-btn">&#8250;</button>
+      </div>
+
+      <div className="datepicker-shortcuts">
+        <button
+          type="button"
+          className={`date-shortcut-btn ${fechaInicio === hoyStr && fechaFin === hoyStr ? 'is-active' : ''}`}
+          onClick={handleHoy}
+        >
+          Hoy
+        </button>
       </div>
 
       <div className="datepicker-grid">
