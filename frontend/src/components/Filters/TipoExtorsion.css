@@ -1,3 +1,4 @@
+/* === tu CSS original sin cambios === */
 .tipo-extorsion {
   display: flex;
   flex-direction: column;
@@ -93,4 +94,68 @@
   .tipo-texto {
     font-size: 14px;
   }
+}
+
+/* === nuevo: toggle y animación === */
+.tipo-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.18s ease;
+}
+
+.tipo-toggle:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.16);
+}
+
+.tipo-toggle-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tipo-toggle .tipo-label {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.tipo-toggle .tipo-helper {
+  font-size: 13px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 480px;
+}
+
+.tipo-chevron {
+  flex-shrink: 0;
+  transition: transform 0.22s ease;
+}
+
+.tipo-chevron.abierto {
+  transform: rotate(180deg);
+}
+
+.tipo-lista-wrapper {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.25s ease;
+}
+
+.tipo-lista-wrapper.abierto {
+  grid-template-rows: 1fr;
+}
+
+.tipo-lista-wrapper .tipo-lista {
+  overflow: hidden;
 }

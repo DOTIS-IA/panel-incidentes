@@ -114,51 +114,51 @@ const FiltrosPage = () => {
       </div>
 
       <div className="filtros-body">
-        <div className="filtros-top-grid">
-          <div className="filtros-group filtros-panel-card">
-            <label className="group-label">Seleccionar hora</label>
-            <p className="group-helper">
-              Define un rango puntual o usa uno de los horarios sugeridos para acelerar la consulta.
-            </p>
-            <TimePicker
-              horaInicio={filtros.horaInicio}
-              minutosInicio={filtros.minutosInicio}
-              horaFin={filtros.horaFin}
-              minutosFin={filtros.minutosFin}
-              onChangeHoraInicio={(h) => set('horaInicio', h)}
-              onChangeMinutosInicio={(m) => set('minutosInicio', m)}
-              onChangeHoraFin={(h) => set('horaFin', h)}
-              onChangeMinutosFin={(m) => set('minutosFin', m)}
-            />
+        
+        {/* NUEVA DISTRIBUCIÓN 80% / 20% */}
+        <div className="filtros-layout-grid">
+          
+          {/* COLUMNA IZQUIERDA (80%) */}
+          <div className="filtros-left-column">
+            <div className="filtros-group filtros-panel-card">
+              <label className="group-label">Seleccionar hora</label>
+              <p className="group-helper">
+                Define un rango puntual o usa uno de los horarios sugeridos para acelerar la consulta.
+              </p>
+              <TimePicker
+                horaInicio={filtros.horaInicio}
+                minutosInicio={filtros.minutosInicio}
+                horaFin={filtros.horaFin}
+                minutosFin={filtros.minutosFin}
+                onChangeHoraInicio={(h) => set('horaInicio', h)}
+                onChangeMinutosInicio={(m) => set('minutosInicio', m)}
+                onChangeHoraFin={(h) => set('horaFin', h)}
+                onChangeMinutosFin={(m) => set('minutosFin', m)}
+              />
+            </div>
+
+            <div className="filtros-row">
+              <TipoExtorsion
+                tipos={tiposExtorsion}
+                seleccionado={filtros.tipoExtorsion}
+                onSelect={(tipo) => set('tipoExtorsion', tipo)}
+              />
+            </div>
           </div>
 
-          <div className="filtros-group filtros-group-date filtros-panel-card">
-            <label className="group-label">Fecha</label>
-            <DateRangePicker
-              fechaInicio={filtros.fechaInicio}
-              fechaFin={filtros.fechaFin}
-              onChangeFechaInicio={(f) => set('fechaInicio', f)}
-              onChangeFechaFin={(f) => set('fechaFin', f)}
-            />
+          {/* COLUMNA DERECHA (20%) */}
+          <div className="filtros-right-column">
+            <div className="filtros-group filtros-group-date filtros-panel-card">
+              <label className="group-label">Fecha</label>
+              <DateRangePicker
+                fechaInicio={filtros.fechaInicio}
+                fechaFin={filtros.fechaFin}
+                onChangeFechaInicio={(f) => set('fechaInicio', f)}
+                onChangeFechaFin={(f) => set('fechaFin', f)}
+              />
+            </div>
           </div>
 
-          <div className="filtros-group filtros-group-id filtros-panel-card">
-            <label className="group-label">ID</label>
-            <div className="id-badge">{filtros.id || 'Todos'}</div>
-            <p className="id-helper">
-              {filtros.id
-                ? 'La búsqueda priorizará el identificador capturado arriba.'
-                : 'Sin un ID específico, la consulta revisa todos los incidentes.'}
-            </p>
-          </div>
-        </div>
-
-        <div className="filtros-row">
-          <TipoExtorsion
-            tipos={tiposExtorsion}
-            seleccionado={filtros.tipoExtorsion}
-            onSelect={(tipo) => set('tipoExtorsion', tipo)}
-          />
         </div>
 
         {error && <p className="filtros-error">Aviso: {error}</p>}

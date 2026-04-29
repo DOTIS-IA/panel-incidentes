@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { incidentesService } from '../services/api';
+import { guardarEnHistorial } from '../utils/Reportescache';
 import './DetalleIncidentePage.css';
 
 const fmt = (value) => {
@@ -52,7 +53,7 @@ const DetalleIncidentePage = () => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     incidentesService.getById(id)
-      .then((data) => { if (active) setIncidente(data); })
+      .then((data) => { if (active) { setIncidente(data); guardarEnHistorial(data); } })
       .catch((err) => { if (active) setError(err.message); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };

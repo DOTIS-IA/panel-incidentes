@@ -86,13 +86,15 @@ DB_USER=postgres
 DB_PASSWORD=postgres
 JWT_SECRET_KEY=<python -c "import secrets; print(secrets.token_hex(32))">
 JWT_EXPIRE_HOURS=8
+DATA_DEFAULT_LIMIT=500
+DATA_MAX_LIMIT=2000
 ```
 
 **Frontend** — create `frontend/.env`:
 ```
 VITE_API_URL=http://localhost:8000
 ```
-Without this file, `api.js` defaults to `http://localhost:8003`, causing `ERR_CONNECTION_REFUSED`.
+Without this file, `api.js` defaults to `http://localhost:8000`. Keep the file explicit when switching between local, staging, and production URLs.
 
 ## Architecture
 
@@ -133,7 +135,7 @@ All endpoints except `/health` and `/auth/login` require `Authorization: Bearer 
 | `GET` | `/extortion-types` | Yes | Catalog from `public.extortion_type` |
 | `POST` | `/users` | Admin only | Create a new user |
 
-**`/data` query params:** `fecha`, `fecha_inicio`, `fecha_fin` (date strings), `hora`, `minutos` (ints), `tipo_extorsion` (string, matched by id or normalized name), `id_conv` (string).
+**`/data` query params:** `fecha`, `fecha_inicio`, `fecha_fin` (date strings), `hora`, `minutos` (exact time ints), `hora_inicio`, `minutos_inicio`, `hora_fin`, `minutos_fin` (time range ints), `tipo_extorsion` (string, matched by id or normalized name), `id_conv` (string), `limit` (bounded result count).
 
 **`/auth/login` body:** `application/x-www-form-urlencoded` with `username` and `password`.
 
@@ -149,11 +151,12 @@ Both backend and frontend normalize `extortion_name` to fix `?` encoding artifac
 
 ## User Management
 
-`seed_user.py` (gitignored) creates users in `public.users`:
+`scripts/create_user.py` creates or updates users in `public.users`:
 
 ```bash
 cd backend/api
-python seed_user.py --username admin --password <pass> --role admin
+python scripts/create_user.py --username admin --email admin@example.local --password <pass> --role admin
+python scripts/create_user.py --username admin --email admin@example.local --password <new-pass> --role admin --update
 # roles: admin | monitor | operativo
 ```
 
@@ -174,6 +177,66 @@ git rm --cached -r .
 git reset --hard HEAD
 ```
 
+## Docker Deployment
+
+### Building images
+
+```bash
+# Backend
+docker build -t panel-api ./backend/api
+
+# Frontend (local test — uses default API URL)
+docker build -t panel-frontend ./frontend
+
+# Frontend (production — VITE_API_URL is baked at build time)
+docker build \
+  --build-arg VITE_API_URL=https://panel-incidentes.doti-ia.com/api \
+  -t panel-frontend ./frontend
+```
+
+### Backend environment on the server
+
+The backend container reads its DB credentials and JWT secret from environment variables. On the server, pass them via `docker-compose.yml` or a `.env` file in the same directory as the compose file. Key difference from local dev: `DB_PORT=5432` (internal Docker network port) and `DB_HOST=mas089-postgres` (container name on `database-default` network). `JWT_SECRET_KEY` must be generated once on the server and never rotated without logging out all users.
+
+### Server integration
+
+The server runs a shared `docker-compose.yml` in `Docker-MAS-089`. This project adds two services (`panel-api` and `panel-frontend`) to that compose, both joined to `mas089-net`. Nginx proxies `panel-incidentes.doti-ia.com` → frontend:80 for the SPA and `/api/` → panel-api:8000 for the backend.
+
+`backend/db/` is only needed for local development. Do not copy it to the server — the server DB already has its own migrations applied.
+
 ## Relationship with Docker-MAS-089
 
 This project shares the same PostgreSQL database (`bd_089`) as the `Docker-MAS-089` repo. That repo owns the sync pipeline and the `public` schema views. This project only reads via `analytics` schema views and `public.extortion_type`.
+
+## Production deployment
+
+The app runs at `https://panel-incidentes.doti-ia.com` using MAS_089's nginx and Docker infrastructure. The production stack lives at `~/panel-incidentes/` on the server.
+
+**Key production files (not for local dev):**
+- `~/panel-incidentes/docker-compose.yml` — production stack (joins MAS_089's external Docker networks)
+- `~/panel-incidentes/.env` — production credentials; NOT `backend/api/.env` (that's local dev only)
+
+**Networks (external, already exist in Docker):**
+- `mas089_mas089-net` — nginx reaches the containers
+- `database_default` — API reaches `mas089-postgres`
+
+**DB role:** `mas089_panel_rw` — minimal grants: SELECT on `analytics.vw_report_conversation_panel` and `public.extortion_type`, SELECT+INSERT on `public.users`. Created by migration `20260427_027` in `Docker-MAS-089`.
+
+**Auth:** Same `public.users` table as MAS_089's Streamlit dashboard. Same credentials work on both.
+
+**nginx routing** (in `Docker-MAS-089/deployments/mas089/nginx/default.conf`):
+- `location = /api/auth/login` → `panel-incidentes-api:8000/auth/login` (rate-limited)
+- `location /api/` → strips `/api/` prefix → `panel-incidentes-api:8000`
+- `location /` → `panel-incidentes-frontend:80`
+
+All nginx upstreams use `resolver 127.0.0.11 valid=30s` + variable + `rewrite ... break` to avoid caching Docker container IPs.
+
+**Production commands:**
+```bash
+cd ~/panel-incidentes
+docker compose ps
+docker compose up -d --build    # rebuild after code changes
+docker compose restart api      # restart after .env changes only
+```
+
+**VITE_API_URL** is baked into the frontend bundle at build time as `https://panel-incidentes.doti-ia.com/api`. If the domain changes, rebuild the frontend.

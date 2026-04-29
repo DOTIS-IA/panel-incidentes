@@ -74,8 +74,13 @@ const TimePicker = ({
   };
 
   const applyQuickRange = ({ start, end }) => {
-    applyTime(start, onChangeHoraInicio, onChangeMinutosInicio);
-    applyTime(end, onChangeHoraFin, onChangeMinutosFin);
+    if (start === valorInicio && end === valorFin) {
+      applyTime('09:00', onChangeHoraInicio, onChangeMinutosInicio);
+      applyTime('14:00', onChangeHoraFin, onChangeMinutosFin);
+    } else {
+      applyTime(start, onChangeHoraInicio, onChangeMinutosInicio);
+      applyTime(end, onChangeHoraFin, onChangeMinutosFin);
+    }
   };
 
   return (

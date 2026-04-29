@@ -56,12 +56,25 @@
   box-shadow: 0 1px 6px rgba(0,0,0,0.2);
 }
 
-.filtros-top-grid {
+/* 🔥 NUEVA DISTRIBUCIÓN 80/20 */
+.filtros-layout-grid {
   display: grid;
-  grid-template-columns: minmax(250px, 300px) minmax(290px, 360px) minmax(180px, 240px);
-  gap: 18px;
+  /* 4fr y 1fr crean una proporción exacta de 80% y 20%. El minmax protege el calendario en pantallas pequeñas */
+  grid-template-columns: 4fr minmax(280px, 1fr);
+  gap: 32px;
   align-items: start;
-  justify-content: start;
+}
+
+.filtros-left-column {
+  display: flex;
+  flex-direction: column;
+  gap: 28px; /* Espacio entre el selector de hora y el tipo de extorsión */
+}
+
+.filtros-right-column {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .filtros-row {
@@ -83,8 +96,7 @@
 }
 
 .filtros-group-date {
-  min-width: 320px;
-  flex: 0 1 360px;
+  width: 100%;
 }
 
 .filtros-group-id {
@@ -99,6 +111,13 @@
   text-transform: uppercase;
 }
 
+.group-helper {
+  margin: 0 0 12px 0;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
 .id-badge {
   padding: 10px 14px;
   border: 1px solid var(--border);
@@ -110,14 +129,6 @@
   background: var(--bg-surface);
   min-width: 110px;
   text-align: center;
-}
-
-.id-helper {
-  margin: 2px 0 0;
-  max-width: 220px;
-  color: var(--text-muted);
-  font-size: 12px;
-  line-height: 1.45;
 }
 
 .filtros-error {
@@ -144,15 +155,13 @@
     border-radius: 12px;
     border: none;
     cursor: pointer;
-    transition: all 0.3s ease; /* 🔥 animación suave */
+    transition: all 0.3s ease;
 }
 
-/* color base de limpiar */
 .btn-limpiar {
     background-color: #db2b2b;
 }
 
-/* 🔥 HOVER PARA AMBOS BOTONES */
 .btn-generar:hover,
 .btn-limpiar:hover {
   background: var(--color-primary-hover);
@@ -166,12 +175,6 @@
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
-}
-
-.btn-generar:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
 }
 
 .resultados-panel {
@@ -267,6 +270,7 @@
   border-top: 1px solid var(--border-soft);
 }
 
+/* 🔥 RESPONSIVE ADAPTADO AL NUEVO GRID */
 @media (max-width: 900px) {
   .filtros-page {
     padding: 24px 18px 40px;
@@ -285,19 +289,13 @@
     width: 100%;
   }
 
-  .filtros-top-grid {
+  /* Si la pantalla es menor a 900px, colapsamos a 1 sola columna */
+  .filtros-layout-grid {
     grid-template-columns: 1fr;
-  }
-
-  .filtros-group-date {
-    min-width: 100%;
+    gap: 24px;
   }
 
   .filtros-group-id {
     min-width: 100%;
-  }
-
-  .id-helper {
-    max-width: none;
   }
 }

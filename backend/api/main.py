@@ -8,7 +8,7 @@ import bcrypt
 import psycopg
 import psycopg_pool
 from dotenv import load_dotenv
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import Depends, FastAPI, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
@@ -19,6 +19,11 @@ load_dotenv()
 JWT_SECRET   = os.getenv("JWT_SECRET_KEY", "")
 JWT_ALGO     = "HS256"
 JWT_EXPIRE_H = int(os.getenv("JWT_EXPIRE_HOURS", "8"))
+DEFAULT_DATA_LIMIT = int(os.getenv("DATA_DEFAULT_LIMIT", "500"))
+MAX_DATA_LIMIT = int(os.getenv("DATA_MAX_LIMIT", "2000"))
+
+if len(JWT_SECRET) < 32:
+    raise RuntimeError("JWT_SECRET_KEY must be set and contain at least 32 characters")
 
 
 class IncidenteItem(BaseModel):
@@ -185,7 +190,11 @@ app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=os.getenv("CORS_ORIGINS", "http://localhost:5173").split(","),
+    allow_origins=[
+        origin.strip()
+        for origin in os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",")
+        if origin.strip()
+    ],
     allow_methods=["GET", "POST"],            # POST necesario para el login
     allow_headers=["*"],
 )
@@ -194,6 +203,11 @@ app.add_middleware(
 # Cuando un endpoint usa Depends(oauth2_scheme), FastAPI extrae automáticamente
 # el token del header: Authorization: Bearer <token>
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+
+
+def db_unavailable(context: str, exc: Exception) -> HTTPException:
+    print(f"[{context}] DB error: {exc}")
+    return HTTPException(status_code=503, detail="Base de datos no disponible")
 
 
 # ── Función: crear JWT ───────────────────────────────────────────────────────
@@ -212,7 +226,7 @@ def get_usuario_actual(token: str = Depends(oauth2_scheme)) -> UsuarioActual:
         payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGO])
         username: str = payload.get("sub")
         role: str = payload.get("role")
-        if not username:
+        if not username or not role:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token inválido")
         return UsuarioActual(username=username, role=role)
     except JWTError:
@@ -237,8 +251,7 @@ async def login(form: OAuth2PasswordRequestForm = Depends()):
             cur = conn.execute(sql, {"u": form.username})
             row = cur.fetchone()
     except Exception as e:
-        print(f"[login] DB error: {e}")
-        raise HTTPException(status_code=503, detail=f"DB error: {e}")
+        raise db_unavailable("login", e)
 
     # 2. Si no existe el usuario → 401 (mismo mensaje que contraseña incorrecta,
     #    para no revelar si el username existe o no)
@@ -290,8 +303,7 @@ async def create_user(user: UsuarioCreate, _: UsuarioActual = Depends(require_ad
     except psycopg.errors.UniqueViolation:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="El usuario o correo ya existe")
     except Exception as e:
-        print(f"[create_user] DB error: {e}")
-        raise HTTPException(status_code=503, detail=f"DB error: {e}")
+        raise db_unavailable("create_user", e)
 
 
 @app.get("/health")
@@ -301,8 +313,7 @@ async def health():
             conn.execute("SELECT 1")
             return {"status": "ok", "db": "connected"}
     except Exception as e:
-        print(f"[health] DB error: {e}")
-        raise HTTPException(status_code=503, detail=f"DB error: {e}")
+        raise db_unavailable("health", e)
 
 
 @app.get("/extortion-types", response_model=list[TipoExtorsion])
@@ -332,7 +343,7 @@ async def get_extortion_types(_: UsuarioActual = Depends(get_usuario_actual)):
             )
             return TIPOS_EXTORSION_FALLBACK if catalogo_invalido else tipos
         except Exception as e:
-            raise HTTPException(status_code=503, detail=f"DB error: {e}")
+            raise db_unavailable("get_extortion_types", e)
 
 
 @app.get("/data", response_model=list[IncidenteItem])
@@ -340,10 +351,15 @@ async def get_data(
     fecha: Optional[str] = None,
     fecha_inicio: Optional[str] = None,
     fecha_fin: Optional[str] = None,
-    hora: Optional[int] = None,
-    minutos: Optional[int] = None,
+    hora: Optional[int] = Query(default=None, ge=0, le=23),
+    minutos: Optional[int] = Query(default=None, ge=0, le=59),
+    hora_inicio: Optional[int] = Query(default=None, ge=0, le=23),
+    minutos_inicio: Optional[int] = Query(default=None, ge=0, le=59),
+    hora_fin: Optional[int] = Query(default=None, ge=0, le=23),
+    minutos_fin: Optional[int] = Query(default=None, ge=0, le=59),
     tipo_extorsion: Optional[str] = None,
     id_conv: Optional[str] = None,
+    limit: int = Query(default=DEFAULT_DATA_LIMIT, ge=1, le=MAX_DATA_LIMIT),
     _: UsuarioActual = Depends(get_usuario_actual)
 ):
     filters = []
@@ -368,6 +384,29 @@ async def get_data(
     if minutos is not None:
         filters.append("EXTRACT(MINUTE FROM event_ts) = %(minutos)s")
         params["minutos"] = minutos
+
+    has_range_filter = any(
+        value is not None
+        for value in (hora_inicio, minutos_inicio, hora_fin, minutos_fin)
+    )
+    if has_range_filter:
+        start_hour = hora_inicio if hora_inicio is not None else 0
+        start_minute = minutos_inicio if minutos_inicio is not None else 0
+        end_hour = hora_fin if hora_fin is not None else 23
+        end_minute = minutos_fin if minutos_fin is not None else 59
+        start_total = start_hour * 60 + start_minute
+        end_total = end_hour * 60 + end_minute
+        if end_total < start_total:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="La hora final debe ser igual o posterior a la hora inicial",
+            )
+        filters.append(
+            "((EXTRACT(HOUR FROM event_ts)::int * 60) + EXTRACT(MINUTE FROM event_ts)::int) "
+            "BETWEEN %(minuto_inicio_total)s AND %(minuto_fin_total)s"
+        )
+        params["minuto_inicio_total"] = start_total
+        params["minuto_fin_total"] = end_total
 
     if tipo_extorsion:
         normalized_tipo_extorsion = tipo_extorsion.strip()
@@ -394,7 +433,9 @@ async def get_data(
         FROM analytics.vw_report_conversation_panel
         {where}
         ORDER BY event_ts DESC
+        LIMIT %(limit)s
     """
+    params["limit"] = limit
 
     try:
         with pool.connection() as conn:
@@ -403,8 +444,7 @@ async def get_data(
             rows = cur.fetchall()
             return [dict(zip(cols, row)) for row in rows]
     except Exception as e:
-        print(f"[get_data] DB error: {e}")
-        raise HTTPException(status_code=503, detail=f"DB error: {e}")
+        raise db_unavailable("get_data", e)
 
 
 @app.get("/data/{id_conv}", response_model=IncidenteItem)
@@ -424,5 +464,4 @@ async def get_incidente(id_conv: str, _: UsuarioActual = Depends(get_usuario_act
         except HTTPException:
             raise
         except Exception as e:
-            print(f"[get_incidente] DB error: {e}")
-            raise HTTPException(status_code=503, detail=f"DB error: {e}")
+            raise db_unavailable("get_incidente", e)
