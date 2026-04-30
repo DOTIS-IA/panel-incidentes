@@ -83,6 +83,7 @@ export const incidentesService = {
       if (filtros.horaFin) params.append('hora_fin', filtros.horaFin);
       if (filtros.minutosFin) params.append('minutos_fin', filtros.minutosFin);
       if (filtros.tipoExtorsion) params.append('tipo_extorsion', filtros.tipoExtorsion);
+      if (filtros.limit) params.append('limit', filtros.limit);
     }
 
     const query = params.toString();
