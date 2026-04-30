@@ -1,6 +1,7 @@
 .filtros-page {
-  padding: 36px 40px;
-  max-width: 1200px;
+  width: 100%;
+  max-width: 100%;
+  padding: clamp(20px, 3vh, 36px) clamp(20px, 3vw, 40px);
 }
 
 .filtros-header {
