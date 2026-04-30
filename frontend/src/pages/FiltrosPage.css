@@ -1,6 +1,7 @@
 .filtros-page {
-  padding: 36px 40px;
-  max-width: 1200px;
+  width: 100%;
+  max-width: 100%;
+  padding: clamp(20px, 3vh, 36px) clamp(20px, 3vw, 40px);
 }
 
 .filtros-header {
@@ -298,4 +299,51 @@
   .filtros-group-id {
     min-width: 100%;
   }
+}
+
+/* ── Warning modal ─────────────────────────────────────────── */
+.warning-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.warning-modal {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 28px 32px;
+  max-width: 380px;
+  width: 90%;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.warning-modal p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+
+.warning-modal button {
+  align-self: center;
+  padding: 8px 24px;
+  border-radius: 8px;
+  border: none;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.warning-modal button:hover {
+  background: var(--color-primary-hover);
 }
