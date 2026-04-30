@@ -25,6 +25,8 @@ const FiltrosPage = () => {
   const [resultados, setResultados] = useState([]);
   const [consultado, setConsultado] = useState(false);
   const [tiposExtorsion, setTiposExtorsion] = useState([]);
+  const [showWarning, setShowWarning] = useState(false);
+
 
   const [filtros, setFiltros] = useState({
     horaInicio: '09',
@@ -33,7 +35,7 @@ const FiltrosPage = () => {
     minutosFin: '00',
     fechaInicio: '',
     fechaFin: '',
-    id: '',
+    folio: '',
     tipoExtorsion: null,
   });
 
@@ -73,7 +75,7 @@ const FiltrosPage = () => {
       minutosFin: '00',
       fechaInicio: '',
       fechaFin: '',
-      id: '',
+      folio: '',
       tipoExtorsion: null,
     });
     setResultados([]);
@@ -81,6 +83,11 @@ const FiltrosPage = () => {
   };
 
   const handleGenerar = async () => {
+    const hayFiltro = filtros.folio || filtros.fechaInicio || filtros.fechaFin || filtros.tipoExtorsion;
+    if (!hayFiltro){
+      setShowWarning(true);
+      return;
+    }
     const resultado = await generarReporte(filtros);
     const resultadosGenerados = Array.isArray(resultado) ? resultado : [];
     setResultados(resultadosGenerados);
@@ -94,7 +101,7 @@ const FiltrosPage = () => {
         <div>
           <h1 className="filtros-title">Filtros</h1>
           <p className="filtros-subtitle">
-            Genera el reporte y revisa los incidentes encontrados sin salir de esta vista.
+            Genera el reporte y revisa los incidentes encontrados.
           </p>
         </div>
 
@@ -105,9 +112,9 @@ const FiltrosPage = () => {
           </svg>
           <input
             type="text"
-            placeholder="Buscar ID"
-            value={filtros.id}
-            onChange={(e) => set('id', e.target.value)}
+            placeholder="Buscar por folio"
+            value={filtros.folio}
+            onChange={(e) => set('folio', e.target.value)}
             className="buscar-input"
           />
         </div>
@@ -220,6 +227,15 @@ const FiltrosPage = () => {
           </div>
         </section>
       )}
+      {showWarning && (
+      <div className="warning-overlay" onClick={() => setShowWarning(false)}>
+        <div className="warning-modal" onClick={(e) => e.stopPropagation()}>
+          <p>Selecciona al menos un filtro antes de generar el reporte.</p>
+          <button onClick={() => setShowWarning(false)}>Entendido</button>
+        </div>
+      </div>
+    )}
+
     </div>
   );
 };

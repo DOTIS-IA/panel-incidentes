@@ -344,6 +344,7 @@ async def get_data(
     minutos: Optional[int] = None,
     tipo_extorsion: Optional[str] = None,
     id_conv: Optional[str] = None,
+    folio: Optional[str] = None,
     _: UsuarioActual = Depends(get_usuario_actual)
 ):
     filters = []
@@ -387,6 +388,10 @@ async def get_data(
     if id_conv:
         filters.append("id_conv_eleven = %(id_conv)s")
         params["id_conv"] = id_conv
+
+    if folio:
+        filters.append("folio = %(folio)s")
+        params["folio"] = folio
 
     where = f"WHERE {' AND '.join(filters)}" if filters else ""
     sql = f"""

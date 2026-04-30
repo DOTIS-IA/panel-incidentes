@@ -72,8 +72,8 @@ export const incidentesService = {
   getAll: async (filtros = {}) => {
     const params = new URLSearchParams();
 
-    if (filtros.id) {
-      params.append('id_conv', filtros.id);
+    if (filtros.folio) {
+      params.append('folio', filtros.folio);
     } else {
       if (filtros.fechaInicio) params.append('fecha_inicio', filtros.fechaInicio);
       if (filtros.fechaFin) params.append('fecha_fin', filtros.fechaFin);
