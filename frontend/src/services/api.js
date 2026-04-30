@@ -76,7 +76,8 @@ export const incidentesService = {
       params.append('folio', filtros.folio);
     } else {
       if (filtros.fechaInicio) params.append('fecha_inicio', filtros.fechaInicio);
-      if (filtros.fechaFin) params.append('fecha_fin', filtros.fechaFin);
+      const fechaFin = filtros.fechaFin || filtros.fechaInicio;
+      if (fechaFin) params.append('fecha_fin', fechaFin);
       if (filtros.horaInicio) params.append('hora_inicio', filtros.horaInicio);
       if (filtros.minutosInicio) params.append('minutos_inicio', filtros.minutosInicio);
       if (filtros.horaFin) params.append('hora_fin', filtros.horaFin);
