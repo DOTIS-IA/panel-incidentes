@@ -20,6 +20,8 @@ React (Vite, puerto 5173)
 
 El proyecto comparte la base de datos `bd_089` con el repositorio `Docker-MAS-089` (pipeline de sincronización y dashboard analítico de Streamlit). Mantiene JWT propio para la sesión del panel, consulta incidentes a través de vistas del esquema `analytics` y valida usuarios contra `public.users` en modo solo lectura.
 
+Contrato local de autenticación y usuarios: [docs/auth-and-users.md](docs/auth-and-users.md).
+
 ---
 
 ## Stack tecnológico
@@ -204,6 +206,8 @@ panel-incidentes/
 │   └── db/
 │       ├── migrations/        # SQL aplicados en orden (YYYYMMDD_NNN_desc.sql)
 │       └── docker-compose.yml
+├── docs/
+│   └── auth-and-users.md  # Contrato productivo de auth, roles y alta de usuarios
 └── frontend/
     └── src/
         ├── pages/
