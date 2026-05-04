@@ -40,7 +40,7 @@ El proyecto comparte la base de datos `bd_089` con el repositorio `Docker-MAS-08
 - **Panel de filtros** — Consulta de incidentes por rango de fechas, rango horario, tipo de extorsión o ID exacto
 - **Vista de detalle** — Ficha completa del incidente con secciones de identificadores, tiempos, datos del reporte, montos y cuentas
 - **Transcripción** — Visualización del diálogo de la llamada en formato de chat (agente / víctima) con marca de tiempo por turno, en panel lateral fijo
-- **Roles de usuario** — `admin`, `monitor`, `operativo` con control de acceso en endpoints
+- **Roles de usuario** — `admin`, `monitor`, `operativo` con control de acceso en endpoints; el rol canónico `analisis` está reservado para `analisis.doti-ia.com` y se rechaza en este panel
 
 ---
 
@@ -68,6 +68,7 @@ Todos los endpoints excepto `/health` y `/auth/login` requieren `Authorization: 
 | `admin` | Panel completo + gestión de usuarios (`POST /users`) |
 | `monitor` | Panel completo — solo lectura |
 | `operativo` | Panel completo — solo lectura |
+| `analisis` | Sin acceso — rol reservado para `analisis.doti-ia.com` |
 
 ---
 
@@ -135,7 +136,7 @@ Gestionado por `certbot` del stack `mas089`. Válido hasta 2026-07-26, renovaci�
 
 ### Credenciales de acceso
 
-Misma tabla `public.users` de `bd_089` que usa el dashboard Streamlit de MAS_089. Las credenciales son las mismas que las del dashboard principal en `https://doti-ia.com`.
+Misma tabla `public.users` de `bd_089` que usa el dashboard Streamlit de MAS_089. Las credenciales son las mismas que las del dashboard principal en `https://doti-ia.com`, salvo el rol `analisis`, que se reserva para `https://analisis.doti-ia.com` y no puede iniciar sesion aqui.
 
 ---
 

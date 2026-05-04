@@ -228,6 +228,8 @@ def get_usuario_actual(token: str = Depends(oauth2_scheme)) -> UsuarioActual:
         role: str = payload.get("role")
         if not username or not role:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token inválido")
+        if role == "analisis":
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Rol no autorizado para panel-incidentes")
         return UsuarioActual(username=username, role=role)
     except JWTError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token inválido o expirado")
@@ -263,6 +265,8 @@ async def login(form: OAuth2PasswordRequestForm = Depends()):
     # 3. Si la cuenta está desactivada → 403
     if not is_active:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cuenta desactivada")
+    if role == "analisis":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Rol no autorizado para panel-incidentes")
 
     # 4. Verificar la contraseña contra el hash guardado en la BD
     #    bcrypt.checkpw nunca puede recuperar la contraseña original — solo compara
