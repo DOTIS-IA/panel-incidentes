@@ -57,7 +57,7 @@ Todos los endpoints excepto `/health` y `/auth/login` requieren `Authorization: 
 | `GET` | `/data` | Sí | Lista incidentes con filtros opcionales |
 | `GET` | `/data/{id_conv}` | Sí | Detalle de un incidente por ID |
 | `GET` | `/extortion-types` | Sí | Catálogo de tipos de extorsión |
-| `POST` | `/users` | Admin | Legacy; no usar en producción para crear usuarios canónicos |
+| `POST` | `/users` | Admin | Cerrado: responde `410`; altas solo desde `MAS_089` |
 
 **Parámetros de `/data`:** `fecha`, `fecha_inicio`, `fecha_fin`, `hora`, `minutos`, `hora_inicio`, `minutos_inicio`, `hora_fin`, `minutos_fin`, `tipo_extorsion`, `id_conv`, `limit`
 
@@ -200,14 +200,14 @@ panel-incidentes/
 │   ├── api/
 │   │   ├── main.py            # FastAPI — endpoints, modelos Pydantic, pool
 │   │   ├── scripts/
-│   │   │   └── create_user.py  # Alta/actualización de usuarios para bootstrap
+│   │   │   └── create_user.py  # Bootstrap/desarrollo con usuario BD de escritura
 │   │   ├── .env               # Credenciales (nunca commitear)
 │   │   └── requirements.txt
 │   └── db/
 │       ├── migrations/        # SQL aplicados en orden (YYYYMMDD_NNN_desc.sql)
 │       └── docker-compose.yml
 ├── docs/
-│   └── auth-and-users.md  # Contrato productivo de auth, roles y alta de usuarios
+│   └── auth-and-users.md  # Contrato productivo de auth, roles y usuarios
 └── frontend/
     └── src/
         ├── pages/
@@ -242,6 +242,6 @@ Para actualizar un usuario existente:
 python scripts/create_user.py --username <nombre> --email <correo> --password <nueva_contraseña> --role <admin|monitor|operativo> --update
 ```
 
-Las contraseñas se almacenan como hashes bcrypt. El endpoint `POST /users` existe por compatibilidad, pero queda deprecado en producción para altas canónicas; debe reemplazarse por una llamada interna a `/admin/users` de `mas089-auth` si se decide reactivar gestión de usuarios desde este panel.
+Las contraseñas se almacenan como hashes bcrypt. El endpoint `POST /users` queda cerrado en producción y responde `410 Gone` aun para usuarios `admin`; la creación de usuarios se administra desde `MAS_089` / `mas089-auth`.
 
 El rol `analisis` no es válido para este panel. Aunque exista en `public.users`, `/auth/login` y los endpoints protegidos deben rechazarlo con `403`.

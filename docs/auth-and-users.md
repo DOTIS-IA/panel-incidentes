@@ -57,7 +57,9 @@ Permisos esperados:
 
 La gestion canonica de usuarios vive en `MAS_089`, a traves de `mas089-auth` y la pestaña Administracion del dashboard principal.
 
-En produccion, este panel no debe crear usuarios directamente en `public.users`. El endpoint `POST /users` queda como compatibilidad legacy; si se reactivara la gestion desde el panel, debe llamar internamente a `/admin/users` de `mas089-auth` en lugar de insertar directo en PostgreSQL.
+En produccion, este panel no debe crear usuarios directamente en `public.users`. El endpoint `POST /users` queda cerrado y responde `410 Gone` aun para usuarios `admin`.
+
+Si a futuro se reactivara la gestion desde el panel, debe llamar internamente a `/admin/users` de `mas089-auth` en lugar de insertar directo en PostgreSQL.
 
 El script `backend/api/scripts/create_user.py` queda para bootstrap o desarrollo local cuando se usa una cuenta de BD con permisos de escritura. No debe usarse como flujo operativo normal en produccion.
 
@@ -74,7 +76,7 @@ Validaciones de frontera:
 - login con `admin`, `monitor` u `operativo` activos debe emitir JWT del panel
 - login con `analisis` debe responder `403`
 - cualquier endpoint protegido con token cuyo payload tenga `role=analisis` debe responder `403`
-- `POST /users` no debe considerarse alta canonica en produccion
+- `POST /users` con token `admin` debe responder `410`
 
 ## Regla de cambios
 
