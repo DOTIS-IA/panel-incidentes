@@ -92,7 +92,9 @@ const FiltrosPage = () => {
     <div className="filtros-page">
       <div className="filtros-header">
         <div>
-          <h1 className="filtros-title">Filtros</h1>
+          <h1 className="filtros-title">Lorem ipsum dolor sit amet consectetur adipiscing, elit pulvinar dictum sociosqu lobortis, egestas tortor pretium ullamcorper massa. Primis blandit interdum curabitur rhoncus cursus vehicula, sagittis elementum donec duis. Facilisi justo eros orci dapibus dignissim at porttitor, curabitur morbi ligula dis feugiat urna laoreet, netus cubilia risus nulla litora nisl, duis sem hac tempus consequat elementum.
+
+Tristique semper sodales sagittis odio platea duis, mattis vitae vel suscipit lacus. Porta augue interdum habitant neque lacinia nisl dignissim, vestibulum est sollicitudin ullamcorper nibh curae, accumsan euismod erat cursus fusce aptent. Pretium curae proin dictumst bibendum viverra scelerisque orci in cubilia dis tincidunt vel purus, lacinia lobortis nostra nascetur porta potenti sociis dignissim commodo posuere ad.</h1>
           <p className="filtros-subtitle">
             Genera el reporte y revisa los incidentes encontrados sin salir de esta vista.
           </p>
