@@ -35,16 +35,17 @@ body {
 
 /* 2. El área principal de contenido */
 .app-main {
-  margin-left: 220px; /* Deja el hueco para la barra lateral */
-  flex: 1;
+  margin-left: 220px;
+  width: calc(100% - 220px);
   min-height: 100vh;
   background: var(--bg-app);
-  transition: margin-left 0.3s ease; /* Animación para que se estire al cerrar la barra */
+  transition: margin-left 0.3s ease, width 0.3s ease;
 }
 
-/* Cuando la barra se oculta, quitamos el margen para que el main ocupe todo el ancho */
+/* Cuando la barra se oculta, el main ocupa todo el ancho */
 .app-layout.sidebar-oculta .app-main {
   margin-left: 0;
+  width: 100%;
 }
 
 /* 3. Estilos del nuevo botón para mostrar/ocultar */
