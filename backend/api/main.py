@@ -5,7 +5,6 @@ from decimal import Decimal
 from typing import Any, Optional
 
 import bcrypt
-import psycopg
 import psycopg_pool
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, HTTPException, Query, status
@@ -123,21 +122,6 @@ class UsuarioActual(BaseModel):
     role: str
 
 
-class UsuarioCreate(BaseModel):
-    username: str
-    password: str
-    email: str
-    role: str = "operativo"
-
-
-class UsuarioResponse(BaseModel):
-    id: int
-    username: str
-    email: str
-    role: str
-    is_active: bool
-
-
 CONNINFO = (
     f"host={os.getenv('DB_HOST', 'localhost')} "
     f"port={os.getenv('DB_PORT', 5432)} "
@@ -228,6 +212,8 @@ def get_usuario_actual(token: str = Depends(oauth2_scheme)) -> UsuarioActual:
         role: str = payload.get("role")
         if not username or not role:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token inválido")
+        if role == "analisis":
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado para este dominio")
         return UsuarioActual(username=username, role=role)
     except JWTError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token inválido o expirado")
@@ -263,6 +249,8 @@ async def login(form: OAuth2PasswordRequestForm = Depends()):
     # 3. Si la cuenta está desactivada → 403
     if not is_active:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cuenta desactivada")
+    if role == "analisis":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado para este dominio")
 
     # 4. Verificar la contraseña contra el hash guardado en la BD
     #    bcrypt.checkpw nunca puede recuperar la contraseña original — solo compara
@@ -275,35 +263,12 @@ async def login(form: OAuth2PasswordRequestForm = Depends()):
     return TokenResponse(access_token=token, token_type="bearer", role=role)
 
 
-@app.post("/users", response_model=UsuarioResponse, status_code=status.HTTP_201_CREATED)
-async def create_user(user: UsuarioCreate, _: UsuarioActual = Depends(require_admin)):
-    if user.role not in {"admin", "monitor", "operativo"}:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Rol inválido")
-
-    password_hash = bcrypt.hashpw(user.password.encode(), bcrypt.gensalt()).decode()
-    sql = """
-        INSERT INTO public.users (username, password_hash, email, role)
-        VALUES (%(username)s, %(password_hash)s, %(email)s, %(role)s)
-        RETURNING id, username, email, role, is_active
-    """
-    params = {
-        "username": user.username,
-        "password_hash": password_hash,
-        "email": user.email,
-        "role": user.role,
-    }
-
-    try:
-        with pool.connection() as conn:
-            cur = conn.execute(sql, params)
-            row = cur.fetchone()
-            conn.commit()
-            cols = [desc[0] for desc in cur.description]
-            return dict(zip(cols, row))
-    except psycopg.errors.UniqueViolation:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="El usuario o correo ya existe")
-    except Exception as e:
-        raise db_unavailable("create_user", e)
+@app.post("/users", status_code=status.HTTP_410_GONE)
+async def create_user(_: UsuarioActual = Depends(require_admin)):
+    raise HTTPException(
+        status_code=status.HTTP_410_GONE,
+        detail="La creación de usuarios se administra desde MAS_089 / mas089-auth.",
+    )
 
 
 @app.get("/health")
