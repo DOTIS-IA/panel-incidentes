@@ -22,6 +22,14 @@ JWT_EXPIRE_H = int(os.getenv("JWT_EXPIRE_HOURS", "8"))
 DEFAULT_DATA_LIMIT = int(os.getenv("DATA_DEFAULT_LIMIT", "500"))
 MAX_DATA_LIMIT = int(os.getenv("DATA_MAX_LIMIT", "2000"))
 
+SMTP_HOST     = os.getenv("SMTP_HOST", "smtp.gmail.com")
+SMTP_PORT     = int(os.getenv("SMTP_PORT", 587))
+SMTP_USER     = os.getenv("SMTP_USER")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
+EMAIL_FROM    = os.getenv("SMTP_USER")
+EMAIL_FROM_NAME = os.getenv("EMAIL_FROM_NAME", "Panel Incidentes")
+
+
 if len(JWT_SECRET) < 32:
     raise RuntimeError("JWT_SECRET_KEY must be set and contain at least 32 characters")
 
