@@ -162,6 +162,26 @@ class AsignacionDetalle(BaseModel):
     summary: str | None = None
 
 
+class MonitoristaInfo(BaseModel):
+    id: int
+    username: str
+    email: str | None = None
+
+
+class AsignacionCoordinador(BaseModel):
+    id: int
+    id_conv: str
+    assigned_to_username: str
+    assigned_by_username: str
+    assigned_at: datetime
+    status: str
+    seen_at: datetime | None = None
+    folio: str | None = None
+    event_ts: datetime | None = None
+    extortion_name: str | None = None
+    title: str | None = None
+
+
 CONNINFO = (
     f"host={os.getenv('DB_HOST', 'localhost')} "
     f"port={os.getenv('DB_PORT', 5432)} "
@@ -497,7 +517,7 @@ async def get_incidente(id_conv: str, _: UsuarioActual = Depends(get_usuario_act
             raise db_unavailable("get_incidente", e)
 
 
-# ── Assignments ──────────────────────────────────────────────────────────────
+# ── Assignments Post ──────────────────────────────────────────────────────────────
 
 @app.post("/assignments", response_model=list[AsignacionResponse], status_code=status.HTTP_201_CREATED)
 async def create_assignments(
@@ -696,3 +716,80 @@ async def marcar_visto(
         raise
     except Exception as e:
         raise db_unavailable("marcar_visto", e)
+
+
+# ── Assignments (coordinador) ─────────────────────────────────────────────────
+
+@app.get("/assignments", response_model=list[AsignacionCoordinador])
+async def get_all_assignments(
+    status_filter: Optional[str] = Query(default=None, alias="status", pattern="^(asignado|visto)$"),
+    monitorista: Optional[str] = Query(default=None),
+    _: UsuarioActual = Depends(require_coordinador_o_admin),
+):
+    filters = []
+    params: dict = {}
+
+    if status_filter:
+        filters.append("ca.status = %(status_filter)s")
+        params["status_filter"] = status_filter
+
+    if monitorista:
+        filters.append("u_to.username = %(monitorista)s")
+        params["monitorista"] = monitorista
+
+    where = ("WHERE " + " AND ".join(filters)) if filters else ""
+
+    sql = f"""
+        SELECT
+            ca.id,
+            ca.id_conv,
+            u_to.username  AS assigned_to_username,
+            u_by.username  AS assigned_by_username,
+            ca.assigned_at,
+            ca.status,
+            ca.seen_at,
+            v.folio,
+            v.event_ts,
+            v.extortion_name,
+            v.title
+        FROM public.case_assignments ca
+        JOIN public.users u_to ON ca.assigned_to = u_to.id
+        JOIN public.users u_by ON ca.assigned_by = u_by.id
+        LEFT JOIN analytics.vw_report_conversation_panel v ON ca.id_conv = v.id_conv_eleven
+        {where}
+        ORDER BY ca.assigned_at DESC
+    """
+
+    try:
+        with pool.connection() as conn:
+            cur = conn.execute(sql, params)
+            cols = [d[0] for d in cur.description]
+            return [dict(zip(cols, r)) for r in cur.fetchall()]
+    except Exception as e:
+        raise db_unavailable("get_all_assignments", e)
+
+
+# ── Users ─────────────────────────────────────────────────────────────────────
+
+@app.get("/users", response_model=list[MonitoristaInfo])
+async def get_users(
+    role: Optional[str] = Query(default=None),
+    _: UsuarioActual = Depends(require_coordinador_o_admin),
+):
+    filters = ["is_active = true"]
+    params: dict = {}
+
+    if role:
+        filters.append("role = %(role)s")
+        params["role"] = role
+
+    where = "WHERE " + " AND ".join(filters)
+    sql = f"SELECT id, username, email FROM public.users {where} ORDER BY username"
+
+    try:
+        with pool.connection() as conn:
+            cur = conn.execute(sql, params)
+            cols = [d[0] for d in cur.description]
+            return [dict(zip(cols, r)) for r in cur.fetchall()]
+    except Exception as e:
+        raise db_unavailable("get_users", e)

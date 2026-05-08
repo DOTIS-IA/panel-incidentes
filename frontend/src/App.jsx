@@ -7,6 +7,7 @@ import LoginPage from './pages/LoginPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import Inicio from './pages/Inicio';
 import MisCasosPage from './pages/MisCasosPage';
+import AsignacionesPage from './pages/AsignacionesPage';
 import './App.css';
 
 function App() {
@@ -58,6 +59,7 @@ function App() {
                 {vista === 'vistas' && <FiltrosPage />}
                 {vista === 'inicio' && <Inicio />}
                 {vista === 'misCasos' && <MisCasosPage />}
+                {vista === 'asignaciones' && <AsignacionesPage />}
               </>,
             )}
           </ProtectedRoute>
