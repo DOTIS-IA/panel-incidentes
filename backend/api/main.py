@@ -509,6 +509,14 @@ async def create_assignments(
 
     try:
         with pool.connection() as conn:
+            # Validar que el id_conv exista en la vista
+            existe = conn.execute(
+                "SELECT 1 FROM analytics.vw_report_conversation_panel WHERE id_conv_eleven = %(c)s LIMIT 1",
+                {"c": body.id_conv},
+            ).fetchone()
+            if existe is None:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"El caso {body.id_conv} no existe")
+
             # Obtener el id del usuario que asigna
             row = conn.execute(
                 "SELECT id FROM public.users WHERE username = %(u)s",
