@@ -9,6 +9,7 @@ const AsignarModal = ({ idConvs, onClose, onSuccess }) => {
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState(null);
   const [asignados, setAsignados] = useState(null);
+  const [saltadas, setSaltadas] = useState([]);
 
   useEffect(() => {
     let active = true;
@@ -36,9 +37,22 @@ const AsignarModal = ({ idConvs, onClose, onSuccess }) => {
       const resultados = await Promise.all(
         idConvs.map((id_conv) => assignmentsService.create(id_conv, usernames)),
       );
-      const total = resultados.flat().length;
-      setAsignados(total);
-      onSuccess?.(resultados.flat());
+      const creadas = resultados.flat();
+
+      // Detectar combinaciones que el backend omitió (ya existían)
+      const omitidas = [];
+      for (const id_conv of idConvs) {
+        for (const username of usernames) {
+          const fueCreada = creadas.some(
+            (r) => r.id_conv === id_conv && r.assigned_to_username === username,
+          );
+          if (!fueCreada) omitidas.push({ id_conv, username });
+        }
+      }
+
+      setAsignados(creadas.length);
+      setSaltadas(omitidas);
+      onSuccess?.(creadas);
     } catch (e) {
       setError(e.message);
     } finally {
@@ -62,10 +76,27 @@ const AsignarModal = ({ idConvs, onClose, onSuccess }) => {
         <div className="modal-body">
           {cargando && <p className="modal-estado">Cargando monitoristas...</p>}
           {error && <p className="modal-error">Error: {error}</p>}
-          {asignados !== null && (
+          {asignados !== null && asignados > 0 && (
             <p className="modal-exito">
               {asignados} asignación{asignados !== 1 ? 'es' : ''} creada{asignados !== 1 ? 's' : ''} correctamente.
             </p>
+          )}
+
+          {saltadas.length > 0 && (
+            <div className="modal-advertencia">
+              <p className="modal-advertencia-titulo">
+                {saltadas.length} asignación{saltadas.length !== 1 ? 'es' : ''} omitida{saltadas.length !== 1 ? 's' : ''} — ya existía{saltadas.length !== 1 ? 'n' : ''}:
+              </p>
+              <ul className="modal-advertencia-lista">
+                {saltadas.map(({ id_conv, username }) => (
+                  <li key={`${id_conv}-${username}`}>
+                    <span className="adv-username">{username}</span>
+                    <span className="adv-sep">→</span>
+                    <span className="adv-conv">{id_conv}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
 
           {!cargando && !error && monitoristas.length === 0 && (

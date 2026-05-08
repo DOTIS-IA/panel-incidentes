@@ -20,10 +20,22 @@ const AsignacionesPage = () => {
   const [loadingCasos, setLoadingCasos] = useState(false);
   const [errorCasos, setErrorCasos] = useState(null);
   const [buscado, setBuscado] = useState(false);
-  const [fechaInicio, setFechaInicio] = useState('');
-  const [fechaFin, setFechaFin] = useState('');
+  const [folio, setFolio] = useState('');
   const [seleccionados, setSeleccionados] = useState(new Set());
   const [modalAbierto, setModalAbierto] = useState(false);
+
+  // Restaura la última búsqueda al volver del detalle del caso
+  useEffect(() => {
+    try {
+      const cache = sessionStorage.getItem('asig_casos_cache');
+      if (cache) {
+        const { incidentes: inc, folio: f } = JSON.parse(cache);
+        setIncidentes(inc);
+        setFolio(f || '');
+        setBuscado(true);
+      }
+    } catch { /* sessionStorage no disponible o dato corrupto */ }
+  }, []);
 
   // ── Tab Resumen ──────────────────────────────────────────────────────────────
   const [asignaciones, setAsignaciones] = useState([]);
@@ -38,10 +50,8 @@ const AsignacionesPage = () => {
     setBuscado(true);
     setSeleccionados(new Set());
     try {
-      const data = await incidentesService.getAll({
-        fechaInicio: fechaInicio || undefined,
-        fechaFin: fechaFin || undefined,
-      });
+      const data = await incidentesService.getAll({ folio: folio || undefined });
+      sessionStorage.setItem('asig_casos_cache', JSON.stringify({ incidentes: data, folio }));
       setIncidentes(data);
     } catch (e) {
       setErrorCasos(e.message);
@@ -111,21 +121,14 @@ const AsignacionesPage = () => {
         <>
           <div className="asig-filtros">
             <div className="asig-filtro-grupo">
-              <label className="asig-filtro-label">Desde</label>
+              <label className="asig-filtro-label">Folio</label>
               <input
-                type="date"
+                type="text"
                 className="asig-filtro-input"
-                value={fechaInicio}
-                onChange={(e) => setFechaInicio(e.target.value)}
-              />
-            </div>
-            <div className="asig-filtro-grupo">
-              <label className="asig-filtro-label">Hasta</label>
-              <input
-                type="date"
-                className="asig-filtro-input"
-                value={fechaFin}
-                onChange={(e) => setFechaFin(e.target.value)}
+                placeholder="Ej. EXT-2024-001"
+                value={folio}
+                onChange={(e) => setFolio(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && buscarCasos()}
               />
             </div>
             <button className="btn-buscar-casos" onClick={buscarCasos} disabled={loadingCasos}>
