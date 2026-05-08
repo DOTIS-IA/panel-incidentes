@@ -124,3 +124,30 @@ export const incidentesService = {
 export const archivosService = {
   getAll: async () => [],
 };
+
+export const assignmentsService = {
+  create: async (id_conv, monitoristas) => {
+    const res = await fetch(`${BASE_URL}/assignments`, {
+      method: 'POST',
+      headers: buildHeaders(),
+      body: JSON.stringify({ id_conv, monitoristas }),
+    });
+    return handleResponse(res);
+  },
+
+  getMine: async (status = null) => {
+    const params = status ? `?status=${status}` : '';
+    const res = await fetch(`${BASE_URL}/assignments/me${params}`, {
+      headers: buildHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  markAsVisto: async (id) => {
+    const res = await fetch(`${BASE_URL}/assignments/${id}/visto`, {
+      method: 'PATCH',
+      headers: buildHeaders(),
+    });
+    return handleResponse(res);
+  },
+};
