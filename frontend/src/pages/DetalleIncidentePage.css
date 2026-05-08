@@ -324,3 +324,32 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ── Acciones del coordinador ─────────────────────────────────────────────── */
+
+.detalle-acciones {
+  margin-top: 40px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn-asignar-caso {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 22px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 10px;
+  border: none;
+  background: var(--accent, #6366f1);
+  color: #fff;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.btn-asignar-caso:hover {
+  opacity: 0.85;
+}
