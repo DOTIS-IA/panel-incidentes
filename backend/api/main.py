@@ -6,8 +6,9 @@ from typing import Any, Optional
 
 import bcrypt
 import psycopg_pool
+from apscheduler.schedulers.background import BackgroundScheduler
 from dotenv import load_dotenv
-from email_service import send_email
+from email_service import enviar_digest_coordinadores, send_email
 from fastapi import Depends, FastAPI, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
@@ -28,6 +29,7 @@ SMTP_USER     = os.getenv("SMTP_USER")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
 EMAIL_FROM    = os.getenv("SMTP_USER")
 EMAIL_FROM_NAME = os.getenv("EMAIL_FROM_NAME", "Panel Incidentes")
+DIGEST_HOUR   = int(os.getenv("DIGEST_HOUR", "8"))
 
 
 if len(JWT_SECRET) < 32:
@@ -203,9 +205,23 @@ async def lifespan(_: FastAPI):
     global pool
     pool = psycopg_pool.ConnectionPool(CONNINFO, min_size=1, max_size=10)
     print("DB pool created")
+
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(
+        enviar_digest_coordinadores,
+        trigger="cron",
+        hour=DIGEST_HOUR,
+        minute=0,
+        kwargs={"pool": pool},
+    )
+    scheduler.start()
+    print(f"Scheduler started — digest diario a las {DIGEST_HOUR:02d}:00 UTC")
+
     yield
+
+    scheduler.shutdown(wait=False)
     pool.close()
-    print("DB pool closed")
+    print("Scheduler and DB pool closed")
 
 
 app = FastAPI(lifespan=lifespan)

@@ -57,7 +57,63 @@ def send_bulk(recipients: list[str], subject: str, body: str) -> dict:
 
 
 def enviar_digest_coordinadores(pool) -> None:
-    """Digest diario para coordinadores: incidentes nuevos de las últimas 24 horas.
-    Pendiente de implementar cuando el sistema de asignación esté listo.
-    """
-    pass
+    """Digest diario para coordinadores: incidentes nuevos de las últimas 24 horas."""
+    from datetime import datetime, timedelta, timezone
+
+    ahora   = datetime.now(timezone.utc)
+    hace_24h = ahora - timedelta(hours=24)
+
+    try:
+        with pool.connection() as conn:
+            cur = conn.execute(
+                """
+                SELECT id_conv_eleven, folio, event_ts, extortion_name, title
+                FROM analytics.vw_report_conversation_panel
+                WHERE event_ts >= %(desde)s
+                ORDER BY event_ts DESC
+                """,
+                {"desde": hace_24h},
+            )
+            cols      = [d[0] for d in cur.description]
+            incidentes = [dict(zip(cols, r)) for r in cur.fetchall()]
+
+            if not incidentes:
+                print("[email] Digest: sin incidentes nuevos en las últimas 24h")
+                return
+
+            emails = [
+                r[0]
+                for r in conn.execute(
+                    "SELECT email FROM public.users WHERE role = 'coordinador_incidentes' AND is_active = true"
+                ).fetchall()
+            ]
+
+    except Exception as e:
+        print(f"[email] Digest: error al consultar BD: {e}")
+        return
+
+    if not emails:
+        print("[email] Digest: no hay coordinadores activos")
+        return
+
+    fecha_str = ahora.strftime("%d/%m/%Y")
+    lineas = [
+        f"Resumen de incidentes nuevos — {fecha_str}",
+        "",
+        f"Se registraron {len(incidentes)} incidente(s) nuevo(s) en las últimas 24 horas:",
+        "",
+    ]
+    for i, inc in enumerate(incidentes, 1):
+        ts    = inc.get("event_ts")
+        fecha = ts.strftime("%d/%m/%Y %H:%M") if ts else "—"
+        lineas.append(
+            f"{i}. {inc.get('folio') or inc['id_conv_eleven']} | "
+            f"{inc.get('extortion_name') or '—'} | "
+            f"{fecha} | "
+            f"{inc.get('title') or '—'}"
+        )
+    lineas += ["", "Ingresa al panel para ver los detalles."]
+
+    subject = f"Panel Incidentes — {len(incidentes)} caso(s) nuevo(s) el {fecha_str}"
+    results = send_bulk(emails, subject, "\n".join(lineas))
+    print(f"[email] Digest: {len(results['sent'])} enviados, {len(results['failed'])} fallidos")
