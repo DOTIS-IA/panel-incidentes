@@ -60,6 +60,17 @@ const AsignarModal = ({ idConvs, onClose, onSuccess }) => {
     }
   };
 
+  const handleReconocer = () => {
+    const saltadosUsernames = new Set(saltadas.map((s) => s.username));
+    setSeleccionados((prev) => {
+      const next = new Set(prev);
+      saltadosUsernames.forEach((u) => next.delete(u));
+      return next;
+    });
+    setSaltadas([]);
+    setAsignados(null);
+  };
+
   const plural = idConvs.length > 1;
 
   return (
@@ -96,6 +107,9 @@ const AsignarModal = ({ idConvs, onClose, onSuccess }) => {
                   </li>
                 ))}
               </ul>
+              <button className="btn-reconocer" onClick={handleReconocer}>
+                Entendido — seguir asignando
+              </button>
             </div>
           )}
 
