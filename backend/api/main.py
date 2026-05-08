@@ -7,6 +7,7 @@ from typing import Any, Optional
 import bcrypt
 import psycopg_pool
 from dotenv import load_dotenv
+from email_service import send_email
 from fastapi import Depends, FastAPI, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
@@ -130,6 +131,35 @@ class UsuarioActual(BaseModel):
     role: str
 
 
+class AsignacionCreate(BaseModel):
+    id_conv: str
+    monitoristas: list[str]
+
+
+class AsignacionResponse(BaseModel):
+    id: int
+    id_conv: str
+    assigned_to_username: str
+    assigned_by_username: str
+    assigned_at: datetime
+    status: str
+    seen_at: datetime | None = None
+
+
+class AsignacionDetalle(BaseModel):
+    id: int
+    id_conv: str
+    assigned_by_username: str
+    assigned_at: datetime
+    status: str
+    seen_at: datetime | None = None
+    folio: str | None = None
+    event_ts: datetime | None = None
+    extortion_name: str | None = None
+    title: str | None = None
+    summary: str | None = None
+
+
 CONNINFO = (
     f"host={os.getenv('DB_HOST', 'localhost')} "
     f"port={os.getenv('DB_PORT', 5432)} "
@@ -187,7 +217,7 @@ app.add_middleware(
         for origin in os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",")
         if origin.strip()
     ],
-    allow_methods=["GET", "POST"],            # POST necesario para el login
+    allow_methods=["GET", "POST", "PATCH"],
     allow_headers=["*"],
 )
 
@@ -230,6 +260,12 @@ def get_usuario_actual(token: str = Depends(oauth2_scheme)) -> UsuarioActual:
 def require_admin(usuario: UsuarioActual = Depends(get_usuario_actual)) -> UsuarioActual:
     if usuario.role != "admin":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Se requiere rol admin")
+    return usuario
+
+
+def require_coordinador_o_admin(usuario: UsuarioActual = Depends(get_usuario_actual)) -> UsuarioActual:
+    if usuario.role not in {"admin", "coordinador_incidentes"}:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Se requiere rol coordinador o admin")
     return usuario
 
 
@@ -443,3 +479,196 @@ async def get_incidente(id_conv: str, _: UsuarioActual = Depends(get_usuario_act
             raise
         except Exception as e:
             raise db_unavailable("get_incidente", e)
+
+
+# ── Assignments ──────────────────────────────────────────────────────────────
+
+@app.post("/assignments", response_model=list[AsignacionResponse], status_code=status.HTTP_201_CREATED)
+async def create_assignments(
+    body: AsignacionCreate,
+    usuario: UsuarioActual = Depends(require_coordinador_o_admin),
+):
+    if not body.monitoristas:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="La lista de monitoristas no puede estar vacía")
+
+    try:
+        with pool.connection() as conn:
+            # Obtener el id del usuario que asigna
+            row = conn.execute(
+                "SELECT id FROM public.users WHERE username = %(u)s",
+                {"u": usuario.username},
+            ).fetchone()
+            if row is None:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario asignador no encontrado")
+            assigned_by_id = row[0]
+
+            # Resolver usernames de monitoristas a filas completas
+            cur = conn.execute(
+                "SELECT id, username, email, role FROM public.users WHERE username = ANY(%(names)s) AND is_active = true",
+                {"names": body.monitoristas},
+            )
+            cols = [d[0] for d in cur.description]
+            monitoristas_rows = [dict(zip(cols, r)) for r in cur.fetchall()]
+
+            invalidos = set(body.monitoristas) - {m["username"] for m in monitoristas_rows}
+            if invalidos:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Usuarios no encontrados o inactivos: {', '.join(invalidos)}",
+                )
+
+            no_monitoristas = [m["username"] for m in monitoristas_rows if m["role"] != "monitorista_incidentes"]
+            if no_monitoristas:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Los siguientes usuarios no tienen rol monitorista_incidentes: {', '.join(no_monitoristas)}",
+                )
+
+            # Insertar solo los que no estén ya asignados y pendientes
+            creadas = []
+            for m in monitoristas_rows:
+                existente = conn.execute(
+                    "SELECT id FROM public.case_assignments WHERE id_conv = %(c)s AND assigned_to = %(t)s AND status = 'asignado'",
+                    {"c": body.id_conv, "t": m["id"]},
+                ).fetchone()
+                if existente:
+                    continue
+
+                cur = conn.execute(
+                    """
+                    INSERT INTO public.case_assignments (id_conv, assigned_to, assigned_by)
+                    VALUES (%(id_conv)s, %(to)s, %(by)s)
+                    RETURNING id, id_conv, assigned_to, assigned_by, assigned_at, status, seen_at
+                    """,
+                    {"id_conv": body.id_conv, "to": m["id"], "by": assigned_by_id},
+                )
+                r = dict(zip([d[0] for d in cur.description], cur.fetchone()))
+                creadas.append({**r, "assigned_to_username": m["username"], "assigned_by_username": usuario.username})
+
+            conn.commit()
+
+        # Enviar correo a cada monitorista nuevo (fuera del bloque de BD)
+        for m in monitoristas_rows:
+            if any(c["assigned_to_username"] == m["username"] for c in creadas):
+                send_email(
+                    to=m["email"],
+                    subject="Nuevo caso asignado — Panel de Incidentes",
+                    body=(
+                        f"Hola {m['username']},\n\n"
+                        f"Se te ha asignado el caso {body.id_conv} en el Panel de Incidentes.\n\n"
+                        f"Ingresa al panel para ver los detalles.\n"
+                    ),
+                )
+
+        return creadas
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise db_unavailable("create_assignments", e)
+
+
+@app.get("/assignments/me", response_model=list[AsignacionDetalle])
+async def get_my_assignments(
+    status_filter: Optional[str] = Query(default=None, alias="status", pattern="^(asignado|visto)$"),
+    usuario: UsuarioActual = Depends(get_usuario_actual),
+):
+    if usuario.role != "monitorista_incidentes":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Se requiere rol monitorista_incidentes")
+
+    try:
+        with pool.connection() as conn:
+            row = conn.execute(
+                "SELECT id FROM public.users WHERE username = %(u)s",
+                {"u": usuario.username},
+            ).fetchone()
+            if row is None:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
+            user_id = row[0]
+
+            status_clause = "AND ca.status = %(status_filter)s" if status_filter else ""
+            sql = f"""
+                SELECT
+                    ca.id,
+                    ca.id_conv,
+                    u_by.username  AS assigned_by_username,
+                    ca.assigned_at,
+                    ca.status,
+                    ca.seen_at,
+                    v.folio,
+                    v.event_ts,
+                    v.extortion_name,
+                    v.title,
+                    v.summary
+                FROM public.case_assignments ca
+                JOIN public.users u_by ON ca.assigned_by = u_by.id
+                LEFT JOIN analytics.vw_report_conversation_panel v ON ca.id_conv = v.id_conv_eleven
+                WHERE ca.assigned_to = %(user_id)s
+                {status_clause}
+                ORDER BY ca.assigned_at DESC
+            """
+            params: dict = {"user_id": user_id}
+            if status_filter:
+                params["status_filter"] = status_filter
+
+            cur = conn.execute(sql, params)
+            cols = [d[0] for d in cur.description]
+            return [dict(zip(cols, r)) for r in cur.fetchall()]
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise db_unavailable("get_my_assignments", e)
+
+
+@app.patch("/assignments/{assignment_id}/visto", response_model=AsignacionResponse)
+async def marcar_visto(
+    assignment_id: int,
+    usuario: UsuarioActual = Depends(get_usuario_actual),
+):
+    if usuario.role != "monitorista_incidentes":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Se requiere rol monitorista_incidentes")
+
+    try:
+        with pool.connection() as conn:
+            row = conn.execute(
+                "SELECT id FROM public.users WHERE username = %(u)s",
+                {"u": usuario.username},
+            ).fetchone()
+            if row is None:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
+            user_id = row[0]
+
+            cur = conn.execute(
+                """
+                UPDATE public.case_assignments
+                SET status = 'visto', seen_at = NOW()
+                WHERE id = %(id)s AND assigned_to = %(user_id)s
+                RETURNING id, id_conv, assigned_to, assigned_by, assigned_at, status, seen_at
+                """,
+                {"id": assignment_id, "user_id": user_id},
+            )
+            row = cur.fetchone()
+            if row is None:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Asignación no encontrada")
+
+            cols = [d[0] for d in cur.description]
+            result = dict(zip(cols, row))
+            conn.commit()
+
+            # Resolver usernames para la respuesta
+            usernames = conn.execute(
+                "SELECT u1.username, u2.username FROM public.users u1, public.users u2 WHERE u1.id = %(to)s AND u2.id = %(by)s",
+                {"to": result["assigned_to"], "by": result["assigned_by"]},
+            ).fetchone()
+
+            return {
+                **result,
+                "assigned_to_username": usernames[0] if usernames else "",
+                "assigned_by_username": usernames[1] if usernames else "",
+            }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise db_unavailable("marcar_visto", e)
