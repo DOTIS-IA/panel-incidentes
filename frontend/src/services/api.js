@@ -124,3 +124,50 @@ export const incidentesService = {
 export const archivosService = {
   getAll: async () => [],
 };
+
+export const usersService = {
+  getMonitoristas: async () => {
+    const res = await fetch(`${BASE_URL}/users?role=monitorista_incidentes`, {
+      headers: buildHeaders(),
+    });
+    return handleResponse(res);
+  },
+};
+
+export const assignmentsService = {
+  getAll: async ({ status = null, monitorista = null } = {}) => {
+    const params = new URLSearchParams();
+    if (status) params.append('status', status);
+    if (monitorista) params.append('monitorista', monitorista);
+    const query = params.toString();
+    const res = await fetch(`${BASE_URL}/assignments${query ? `?${query}` : ''}`, {
+      headers: buildHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  create: async (id_conv, monitoristas) => {
+    const res = await fetch(`${BASE_URL}/assignments`, {
+      method: 'POST',
+      headers: buildHeaders(),
+      body: JSON.stringify({ id_conv, monitoristas }),
+    });
+    return handleResponse(res);
+  },
+
+  getMine: async (status = null) => {
+    const params = status ? `?status=${status}` : '';
+    const res = await fetch(`${BASE_URL}/assignments/me${params}`, {
+      headers: buildHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  markAsVisto: async (id) => {
+    const res = await fetch(`${BASE_URL}/assignments/${id}/visto`, {
+      method: 'PATCH',
+      headers: buildHeaders(),
+    });
+    return handleResponse(res);
+  },
+};

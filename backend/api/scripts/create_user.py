@@ -11,7 +11,7 @@ import psycopg
 from dotenv import load_dotenv
 
 
-VALID_ROLES = {"admin", "monitor", "operativo"}
+VALID_ROLES = {"admin", "monitor", "operativo",'coordinador_incidentes', 'monitorista_incidentes'}
 
 
 def build_conninfo() -> str:

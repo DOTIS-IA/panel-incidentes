@@ -63,6 +63,33 @@ const Sidebar = ({ vistaActiva = 'vistas', onChangeVista, tema, onToggleTema }) 
           </svg>
           Registros
         </button>
+
+        {(role === 'coordinador_incidentes' || role === 'admin') && (
+          <button
+            className={`nav-item ${vistaActiva === 'asignaciones' ? 'active' : ''}`}
+            onClick={() => onChangeVista?.('asignaciones')}
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M2 4h12M2 8h8M2 12h5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              <circle cx="13" cy="11" r="2.5" stroke="currentColor" strokeWidth="1.5" fill="none" />
+              <path d="M12 11l.8.8 1.5-1.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            Asignaciones
+          </button>
+        )}
+
+        {role === 'monitorista_incidentes' && (
+          <button
+            className={`nav-item ${vistaActiva === 'misCasos' ? 'active' : ''}`}
+            onClick={() => onChangeVista?.('misCasos')}
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <rect x="2" y="1" width="12" height="14" rx="1" stroke="currentColor" strokeWidth="1.5" fill="none" />
+              <path d="M5 5H11M5 8H11M5 11H8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+            Mis Casos
+          </button>
+        )}
       </nav>
 
       <div className="sidebar-user-container">

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { incidentesService } from '../services/api';
 import { guardarEnHistorial } from '../utils/Reportescache';
+import AsignarModal from '../components/AsignarModal/AsignarModal';
 import './DetalleIncidentePage.css';
 
 const fmt = (value) => {
@@ -47,6 +48,10 @@ const DetalleIncidentePage = () => {
   const [incidente, setIncidente] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [modalAbierto, setModalAbierto] = useState(false);
+
+  const role = localStorage.getItem('role') || '';
+  const puedeAsignar = role === 'admin' || role === 'coordinador_incidentes';
 
   useEffect(() => {
     let active = true;
@@ -186,6 +191,27 @@ const DetalleIncidentePage = () => {
         )}
 
       </div>
+
+      {puedeAsignar && (
+        <div className="detalle-acciones">
+          <button className="btn-asignar-caso" onClick={() => setModalAbierto(true)}>
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <circle cx="6" cy="5" r="3" stroke="currentColor" strokeWidth="1.5" fill="none" />
+              <path d="M1 14c0-3 2-5 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+              <path d="M12 9v6M9 12h6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+            Asignar caso
+          </button>
+        </div>
+      )}
+
+      {modalAbierto && (
+        <AsignarModal
+          idConvs={[i.id_conv_eleven]}
+          onClose={() => setModalAbierto(false)}
+          onSuccess={() => {}}
+        />
+      )}
 
     </div>
   );
