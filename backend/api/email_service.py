@@ -8,6 +8,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+from email_templates import html_asignacion, html_digest, PANEL_URL
+
 SMTP_HOST     = os.getenv("SMTP_HOST", "smtp.gmail.com")
 SMTP_PORT     = int(os.getenv("SMTP_PORT", 587))
 SMTP_USER     = os.getenv("SMTP_USER", "")
@@ -15,16 +17,18 @@ SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "")
 FROM_NAME     = os.getenv("EMAIL_FROM_NAME", "Panel Incidentes")
 
 
-def _build_message(to: str, subject: str, body: str) -> MIMEMultipart:
+def _build_message(to: str, subject: str, body: str, html: str | None = None) -> MIMEMultipart:
     msg = MIMEMultipart("alternative")
     msg["From"]    = f"{FROM_NAME} <{SMTP_USER}>"
     msg["To"]      = to
     msg["Subject"] = subject
     msg.attach(MIMEText(body, "plain", "utf-8"))
+    if html:
+        msg.attach(MIMEText(html, "html", "utf-8"))
     return msg
 
 
-def send_email(to: str, subject: str, body: str) -> bool:
+def send_email(to: str, subject: str, body: str, html: str | None = None) -> bool:
     """Envía un correo a un destinatario. Retorna True si tuvo éxito."""
     if not SMTP_USER or not SMTP_PASSWORD:
         print("[email] Credenciales SMTP no configuradas — omitiendo envío")
@@ -32,7 +36,7 @@ def send_email(to: str, subject: str, body: str) -> bool:
 
     try:
         context = ssl.create_default_context()
-        msg     = _build_message(to, subject, body)
+        msg     = _build_message(to, subject, body, html)
 
         with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as server:
             server.ehlo()
@@ -47,20 +51,31 @@ def send_email(to: str, subject: str, body: str) -> bool:
         return False
 
 
-def send_bulk(recipients: list[str], subject: str, body: str) -> dict:
+def send_bulk(recipients: list[str], subject: str, body: str, html: str | None = None) -> dict:
     """Envía el mismo correo a varios destinatarios. Retorna resumen de resultados."""
     results: dict[str, list[str]] = {"sent": [], "failed": []}
     for recipient in recipients:
-        ok = send_email(recipient, subject, body)
+        ok = send_email(recipient, subject, body, html)
         (results["sent"] if ok else results["failed"]).append(recipient)
     return results
+
+
+def send_asignacion_email(to: str, username: str, id_conv: str) -> bool:
+    """Envía notificación de asignación de caso con plantilla HTML institucional."""
+    subject = "Nuevo caso asignado — Panel de Incidentes"
+    body    = (
+        f"Hola {username},\n\n"
+        f"Se te ha asignado el caso {id_conv} en el Panel de Incidentes.\n\n"
+        f"Ingresa al panel para ver los detalles: {PANEL_URL}\n"
+    )
+    return send_email(to, subject, body, html_asignacion(username, id_conv))
 
 
 def enviar_digest_coordinadores(pool) -> None:
     """Digest diario para coordinadores: incidentes nuevos de las últimas 24 horas."""
     from datetime import datetime, timedelta, timezone
 
-    ahora   = datetime.now(timezone.utc)
+    ahora    = datetime.now(timezone.utc)
     hace_24h = ahora - timedelta(hours=24)
 
     try:
@@ -74,7 +89,7 @@ def enviar_digest_coordinadores(pool) -> None:
                 """,
                 {"desde": hace_24h},
             )
-            cols      = [d[0] for d in cur.description]
+            cols       = [d[0] for d in cur.description]
             incidentes = [dict(zip(cols, r)) for r in cur.fetchall()]
 
             if not incidentes:
