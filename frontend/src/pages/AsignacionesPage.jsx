@@ -23,6 +23,7 @@ const AsignacionesPage = () => {
   const [folio, setFolio] = useState('');
   const [seleccionados, setSeleccionados] = useState(new Set());
   const [modalAbierto, setModalAbierto] = useState(false);
+  const [folioError, setFolioError] = useState(null);
 
   // Restaura la última búsqueda al volver del detalle del caso
   useEffect(() => {
@@ -45,12 +46,17 @@ const AsignacionesPage = () => {
   const [filtroStatus, setFiltroStatus] = useState('');
 
   const buscarCasos = async () => {
+    if (!folio.trim()) {
+      setFolioError('Primero introduce el folio a buscar.');
+      return;
+    }
+    setFolioError(null);
     setLoadingCasos(true);
     setErrorCasos(null);
     setBuscado(true);
     setSeleccionados(new Set());
     try {
-      const data = await incidentesService.getAll({ folio: folio || undefined });
+      const data = await incidentesService.getAll({ folio: folio.trim() });
       sessionStorage.setItem('asig_casos_cache', JSON.stringify({ incidentes: data, folio }));
       setIncidentes(data);
     } catch (e) {
@@ -58,6 +64,16 @@ const AsignacionesPage = () => {
     } finally {
       setLoadingCasos(false);
     }
+  };
+
+  const limpiarBusqueda = () => {
+    setIncidentes([]);
+    setFolio('');
+    setBuscado(false);
+    setFolioError(null);
+    setErrorCasos(null);
+    setSeleccionados(new Set());
+    sessionStorage.removeItem('asig_casos_cache');
   };
 
   const cargarResumen = async () => {
@@ -124,16 +140,22 @@ const AsignacionesPage = () => {
               <label className="asig-filtro-label">Folio</label>
               <input
                 type="text"
-                className="asig-filtro-input"
+                className={`asig-filtro-input${folioError ? ' asig-filtro-input--error' : ''}`}
                 placeholder="Ej. EXT-2024-001"
                 value={folio}
-                onChange={(e) => setFolio(e.target.value)}
+                onChange={(e) => { setFolio(e.target.value); if (folioError) setFolioError(null); }}
                 onKeyDown={(e) => e.key === 'Enter' && buscarCasos()}
               />
+              {folioError && <p className="asig-folio-error">{folioError}</p>}
             </div>
             <button className="btn-buscar-casos" onClick={buscarCasos} disabled={loadingCasos}>
               {loadingCasos ? 'Buscando...' : 'Buscar'}
             </button>
+            {buscado && (
+              <button className="btn-limpiar-casos" onClick={limpiarBusqueda}>
+                Limpiar
+              </button>
+            )}
           </div>
 
           {errorCasos && <p className="asig-error">Error: {errorCasos}</p>}

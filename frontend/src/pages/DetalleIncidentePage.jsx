@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { incidentesService } from '../services/api';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import { incidentesService, assignmentsService } from '../services/api';
 import { guardarEnHistorial } from '../utils/Reportescache';
 import AsignarModal from '../components/AsignarModal/AsignarModal';
 import './DetalleIncidentePage.css';
@@ -45,13 +45,29 @@ const Seccion = ({ titulo, children }) => (
 const DetalleIncidentePage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const assignmentId = location.state?.assignmentId ?? null;
   const [incidente, setIncidente] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [modalAbierto, setModalAbierto] = useState(false);
+  const [marcando, setMarcando] = useState(false);
+  const [marcarError, setMarcarError] = useState(null);
 
   const role = localStorage.getItem('role') || '';
   const puedeAsignar = role === 'admin' || role === 'coordinador_incidentes';
+
+  const handleMarcarVisto = async () => {
+    setMarcando(true);
+    setMarcarError(null);
+    try {
+      await assignmentsService.markAsVisto(assignmentId);
+      navigate(-1);
+    } catch (e) {
+      setMarcarError(e.message);
+      setMarcando(false);
+    }
+  };
 
   useEffect(() => {
     let active = true;
@@ -185,6 +201,19 @@ const DetalleIncidentePage = () => {
                 <pre className="detalle-transcripcion">
                   {JSON.stringify(i.transcription, null, 2)}
                 </pre>
+              )}
+
+              {assignmentId && (
+                <div className="marcar-visto-wrapper">
+                  <button
+                    className="btn-marcar-visto-detalle"
+                    onClick={handleMarcarVisto}
+                    disabled={marcando}
+                  >
+                    {marcando ? 'Guardando...' : 'Marcar como visto'}
+                  </button>
+                  {marcarError && <p className="marcar-visto-error">{marcarError}</p>}
+                </div>
               )}
             </div>
           </div>
