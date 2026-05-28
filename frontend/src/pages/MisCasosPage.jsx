@@ -16,14 +16,13 @@ const MisCasosPage = () => {
   const [casos, setCasos] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [marcando, setMarcando] = useState(new Set());
 
   useEffect(() => {
     let active = true;
     const fetchCasos = async () => {
       setLoading(true);
       setError(null);
-      try { 
+      try {
         const data = await assignmentsService.getMine(tab);
         if (active) setCasos(data);
       } catch (e) {
@@ -35,23 +34,6 @@ const MisCasosPage = () => {
     fetchCasos();
     return () => { active = false; };
   }, [tab]);
-
-  const handleMarcarVisto = async (e, assignmentId) => {
-    e.stopPropagation();
-    setMarcando((prev) => new Set(prev).add(assignmentId));
-    try {
-      await assignmentsService.markAsVisto(assignmentId);
-      setCasos((prev) => prev.filter((c) => c.id !== assignmentId));
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setMarcando((prev) => {
-        const next = new Set(prev);
-        next.delete(assignmentId);
-        return next;
-      });
-    }
-  };
 
   return (
     <div className="mis-casos-page">
@@ -87,7 +69,7 @@ const MisCasosPage = () => {
           <article
             key={caso.id}
             className="caso-card"
-            onClick={() => navigate(`/incidente/${caso.id_conv}`)}
+            onClick={() => navigate(`/incidente/${caso.id_conv}`, tab === 'asignado' ? { state: { assignmentId: caso.id } } : {})}
           >
             <div className="caso-meta">
               <span className="caso-tag">{caso.extortion_name || 'Sin tipo'}</span>
@@ -102,15 +84,6 @@ const MisCasosPage = () => {
               <span>{formatDateTime(caso.assigned_at)}</span>
             </div>
 
-            {tab === 'asignado' && (
-              <button
-                className="btn-marcar-visto"
-                onClick={(e) => handleMarcarVisto(e, caso.id)}
-                disabled={marcando.has(caso.id)}
-              >
-                {marcando.has(caso.id) ? 'Guardando...' : 'Marcar como visto'}
-              </button>
-            )}
           </article>
         ))}
       </div>
