@@ -4,7 +4,11 @@
       "Bash(.panel/Scripts/python -c ':*)",
       "Bash(.panel/Scripts/python -c \"import psycopg2; print\\(psycopg2.__version__\\)\")",
       "Bash(docker exec:*)",
-      "Bash(grep -E \"\\\\.\\(py|sql|sh|env|toml|ini|conf|yaml|yml\\)$\")"
+      "Bash(grep -E \"\\\\.\\(py|sql|sh|env|toml|ini|conf|yaml|yml\\)$\")",
+      "Bash(git -C /c/workspace/mas_scripts/panel-incidentes branch -a)",
+      "Bash(git -C /c/workspace/mas_scripts/panel-incidentes status)",
+      "Bash(git -C /c/workspace/mas_scripts/panel-incidentes log --oneline main)",
+      "Bash(git -C /c/workspace/mas_scripts/panel-incidentes log --oneline feature/roles)"
     ]
   }
 }
