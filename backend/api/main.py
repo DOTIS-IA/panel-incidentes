@@ -8,7 +8,7 @@ import bcrypt
 import psycopg_pool
 from apscheduler.schedulers.background import BackgroundScheduler
 from dotenv import load_dotenv
-from email_service import enviar_digest_coordinadores, send_email
+from email_service import enviar_digest_coordinadores, send_asignacion_email
 from fastapi import Depends, FastAPI, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
@@ -594,14 +594,10 @@ async def create_assignments(
         # Enviar correo a cada monitorista nuevo (fuera del bloque de BD)
         for m in monitoristas_rows:
             if any(c["assigned_to_username"] == m["username"] for c in creadas):
-                send_email(
+                send_asignacion_email(
                     to=m["email"],
-                    subject="Nuevo caso asignado — Panel de Incidentes",
-                    body=(
-                        f"Hola {m['username']},\n\n"
-                        f"Se te ha asignado el caso {body.id_conv} en el Panel de Incidentes.\n\n"
-                        f"Ingresa al panel para ver los detalles.\n"
-                    ),
+                    username=m["username"],
+                    id_conv=body.id_conv,
                 )
 
         return creadas
