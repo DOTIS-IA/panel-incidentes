@@ -13,7 +13,11 @@ const formatDate = (value) => {
 
 const AsignacionesPage = () => {
   const navigate = useNavigate();
-  const [tab, setTab] = useState('casos');
+  const [tab, setTab] = useState(() => sessionStorage.getItem('asig_tab') || 'casos');
+
+  useEffect(() => {
+    sessionStorage.setItem('asig_tab', tab);
+  }, [tab]);
 
   // ── Tab Casos ────────────────────────────────────────────────────────────────
   const [incidentes, setIncidentes] = useState([]);
