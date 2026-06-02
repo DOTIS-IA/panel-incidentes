@@ -62,6 +62,13 @@ const Inicio = () => {
 
   useEffect(() => { sessionStorage.setItem('inicio_tab', tab); }, [tab]);
   useEffect(() => { sessionStorage.setItem('inicio_panel', panelVisible); }, [panelVisible]);
+
+  useEffect(() => {
+    const saved = sessionStorage.getItem('inicio_visitados_scroll');
+    if (saved === null) return;
+    sessionStorage.removeItem('inicio_visitados_scroll');
+    requestAnimationFrame(() => window.scrollTo({ top: Number(saved), behavior: 'instant' }));
+  }, []);
   useEffect(() => {
     if (reporteSeleccionadoId !== null) {
       sessionStorage.setItem('inicio_reporte_sel', reporteSeleccionadoId);
@@ -326,7 +333,7 @@ const Inicio = () => {
                 <div
                   key={item.id_conv_eleven}
                   className="incidente-row incidente-row--standalone"
-                  onClick={() => navigate(`/incidente/${item.id_conv_eleven}`)}
+                  onClick={() => { sessionStorage.setItem('inicio_visitados_scroll', window.scrollY); navigate(`/incidente/${item.id_conv_eleven}`); }}
                   role="button"
                   tabIndex={0}
                   onKeyDown={(e) => e.key === 'Enter' && navigate(`/incidente/${item.id_conv_eleven}`)}

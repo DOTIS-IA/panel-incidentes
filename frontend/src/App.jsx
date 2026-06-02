@@ -12,13 +12,12 @@ import './App.css';
 
 function App() {
   const navigate = useNavigate();
-  const [vista, setVista] = useState('vistas');
+  const [vista, setVista] = useState(() => sessionStorage.getItem('app_vista') || 'vistas');
   const [tema, setTema] = useState('dark');
   const [sidebarAbierta, setSidebarAbierta] = useState(true);
 
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', tema);
-  }, [tema]);
+  useEffect(() => { sessionStorage.setItem('app_vista', vista); }, [vista]);
+  useEffect(() => { document.documentElement.setAttribute('data-theme', tema); }, [tema]);
 
   const toggleTema = () => setTema((current) => (current === 'dark' ? 'light' : 'dark'));
 
