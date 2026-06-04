@@ -25,15 +25,22 @@ panel-incidentes/
     │   ├── App.jsx                    # Routes + shared state (vista, tema, sidebarAbierta)
     │   ├── components/
     │   │   ├── Sidebar/
+    │   │   ├── AsignarModal/          # Modal reutilizable para asignar casos a monitoristas
+    │   │   ├── Filters/               # TimePicker, DateRangePicker, TipoExtorsion
     │   │   └── ProtectedRoute.jsx
     │   ├── pages/
-    │   │   ├── FiltrosPage.jsx
+    │   │   ├── FiltrosPage.jsx        # Búsqueda de incidentes por filtros
+    │   │   ├── Inicio.jsx             # Registros: tabs Búsquedas + Visitados con panel preview
+    │   │   ├── MisCasosPage.jsx       # Casos asignados al monitorista actual
+    │   │   ├── AsignacionesPage.jsx   # Gestión de asignaciones (coordinador/admin)
     │   │   ├── DetalleIncidentePage.jsx
     │   │   └── LoginPage.jsx
     │   ├── hooks/
     │   │   └── useIncidentes.js       # wraps incidentesService with loading/error state
-    │   └── services/
-    │       └── api.js                 # BASE_URL, incidentesService, token handling
+    │   ├── services/
+    │   │   └── api.js                 # BASE_URL, incidentesService, assignmentsService, usersService
+    │   └── utils/
+    │       └── Reportescache.js       # CRUD localStorage: reportes (max 20) + visitados (max 50)
     ├── package.json
     └── vite.config.js
 ```
@@ -110,17 +117,22 @@ React (Vite, port 5173)
                     └── analytics schema — vw_report_conversation_panel
 ```
 
-**Authentication:** JWT via `public.users` table. Roles: `admin`, `monitor`, `operativo`. `ProtectedRoute` checks `localStorage.getItem('token')`. On 401, `api.js` clears all token keys and redirects to `/login`. To force re-login during development, run `localStorage.clear()` in browser devtools.
+**Authentication:** JWT via `public.users` table. Roles: `admin`, `coordinador_incidentes`, `monitorista_incidentes`. `ProtectedRoute` decodes the token and checks expiration — redirects to `/login` if invalid. On 401, `api.js` clears all token keys and redirects to `/login`. To force re-login during development, run `localStorage.clear()` in browser devtools.
 
-**DB roles:**
+Role-gated UI: Sidebar shows "Asignaciones" only for `coordinador_incidentes`/`admin`; shows "Mis Casos" only for `monitorista_incidentes`. "Asignar caso" button in `DetalleIncidentePage` is hidden for monitoristas.
+
+**DB roles (local dev vs production):**
 - `mas089_sync_rw` — INSERT/UPDATE (AI sync pipeline, external)
-- `mas089_dashboard_ro` — SELECT on tables and all views (this API uses this role)
+- `mas089_dashboard_ro` — SELECT on tables and views (local dev uses this role)
+- `mas089_panel_rw` — production role: SELECT on `analytics.vw_report_conversation_panel` + `public.extortion_type`, SELECT+INSERT on `public.users`
 
 **Routing & state (App.jsx):** Two routes share state (`vista`, `tema`, `sidebarAbierta`) defined in `App`:
-- `/` — renders `FiltrosPage`, `Inicio`, or `Explorador` based on `vista` state
+- `/` — renders `FiltrosPage`, `Inicio`, `MisCasosPage`, or `AsignacionesPage` based on `vista` state (`'vistas'` | `'inicio'` | `'misCasos'` | `'asignaciones'`)
 - `/incidente/:id` — renders `DetalleIncidentePage`; its Sidebar receives `onChangeVista={(v) => { setVista(v); navigate('/'); }}` so sidebar navigation works from the detail page
 
-**Data flow:** `useIncidentes` hook wraps `incidentesService` with loading/error state. Detail page calls `incidentesService.getById` directly.
+**Data flow:** `useIncidentes` hook wraps `incidentesService` with loading/error state. Detail page calls `incidentesService.getById` directly. `assignmentsService` handles case assignments (create, getAll, getMine, markAsVisto). `usersService` fetches monitoristas for assignment modal.
+
+**Storage pattern:** sessionStorage for ephemeral UI state (active vista, last filters, scroll position, panel visibility). localStorage for persistent cache: JWT token/role/username, saved searches via `Reportescache.js` (max 20 reports, max 50 visited). Keys follow a `<page>_<key>` naming convention (e.g. `inicio_tab`, `asig_resumen_scroll`).
 
 ## API Endpoints
 
@@ -133,6 +145,11 @@ All endpoints except `/health` and `/auth/login` require `Authorization: Bearer 
 | `GET` | `/data` | Yes | List incidentes from `analytics.vw_report_conversation_panel` |
 | `GET` | `/data/{id_conv}` | Yes | Single incidente detail — 404 if not found |
 | `GET` | `/extortion-types` | Yes | Catalog from `public.extortion_type` |
+| `POST` | `/assignments` | Coordinator/Admin | Assign cases to a monitorista |
+| `GET` | `/assignments` | Coordinator/Admin | List all assignments |
+| `GET` | `/assignments/mine` | Monitorista | Cases assigned to the current user |
+| `PATCH` | `/assignments/{id}/visto` | Monitorista | Mark assignment as seen |
+| `GET` | `/users/monitoristas` | Coordinator/Admin | List users with monitorista role |
 | `POST` | `/users` | Admin only | Create a new user |
 
 **`/data` query params:** `fecha`, `fecha_inicio`, `fecha_fin` (date strings), `hora`, `minutos` (exact time ints), `hora_inicio`, `minutos_inicio`, `hora_fin`, `minutos_fin` (time range ints), `tipo_extorsion` (string, matched by id or normalized name), `id_conv` (string), `limit` (bounded result count).
@@ -157,7 +174,7 @@ Both backend and frontend normalize `extortion_name` to fix `?` encoding artifac
 cd backend/api
 python scripts/create_user.py --username admin --email admin@example.local --password <pass> --role admin
 python scripts/create_user.py --username admin --email admin@example.local --password <new-pass> --role admin --update
-# roles: admin | monitor | operativo
+# roles: admin | coordinador_incidentes | monitorista_incidentes
 ```
 
 Passwords stored as bcrypt hashes.
