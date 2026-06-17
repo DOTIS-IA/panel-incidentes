@@ -1,0 +1,19 @@
+## Codebase Patterns
+
+> Seed inicial de patrones descubiertos al leer la codebase. El loop debe
+> AÑADIR aquí los patrones nuevos que descubra (no borrar los existentes).
+
+- Componentes en carpeta propia: components/<Nombre>/<Nombre>.jsx + <Nombre>.css
+  (ver AsignarModal/, Sidebar/). Sigue esa estructura para SidePreviewPanel.
+- Formateo de fechas: new Intl.DateTimeFormat('es-MX', { dateStyle:'medium', timeStyle:'short' }).format(new Date(value)). Hay helpers locales formatDateTime/formatDate en cada pagina; reusar el patron.
+- Panel sticky ya existe en Inicio.css: .preview-panel { position: sticky; top: 24px } con fallback responsivo a position: static; layout grid en .busquedas-layout(.con-panel) y ancho extra en .inicio-page--wide.
+- AsignacionesPage.css NO tiene panel sticky: hay que crear clases nuevas (lista + panel) para Casos y Resumen.
+- Estado de UI efimero -> sessionStorage con convencion <page>_<key> (inicio_tab, inicio_panel, inicio_reporte_sel, asig_tab, asig_casos_cache, asig_resumen_scroll, ...). Cache persistente -> localStorage (Reportescache.js).
+- id del incidente: IncidenteItem usa id_conv_eleven (string); AsignacionCoordinador usa id_conv (string). SidePreviewPanel debe normalizar ambos.
+- Datos del preview YA estan en memoria en cada contexto (ver spec §5). NO hacer fetch nuevo, NO tocar services/api.js.
+- Toggle existente panelVisible en Inicio.jsx (clave inicio_panel) lee 'true'/'false' como string; default true cuando la clave no existe.
+- Clic con stopPropagation: el checkbox en caso-asig-card ya hace e.stopPropagation(); respetar ese patron para no disparar el preview al marcar.
+
+## Iteration Log
+
+(vacio — el loop hace append aqui: US-XXX, que se hizo, archivos tocados, validacion)

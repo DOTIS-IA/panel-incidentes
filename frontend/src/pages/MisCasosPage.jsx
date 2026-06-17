@@ -12,7 +12,11 @@ const formatDateTime = (value) => {
 
 const MisCasosPage = () => {
   const navigate = useNavigate();
-  const [tab, setTab] = useState('asignado');
+  const [tab, setTab] = useState(() => sessionStorage.getItem('miscasos_tab') || 'asignado');
+
+  useEffect(() => {
+    sessionStorage.setItem('miscasos_tab', tab);
+  }, [tab]);
   const [casos, setCasos] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);

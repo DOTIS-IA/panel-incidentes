@@ -13,7 +13,11 @@ const formatDate = (value) => {
 
 const AsignacionesPage = () => {
   const navigate = useNavigate();
-  const [tab, setTab] = useState('casos');
+  const [tab, setTab] = useState(() => sessionStorage.getItem('asig_tab') || 'casos');
+
+  useEffect(() => {
+    sessionStorage.setItem('asig_tab', tab);
+  }, [tab]);
 
   // ── Tab Casos ────────────────────────────────────────────────────────────────
   const [incidentes, setIncidentes] = useState([]);
@@ -42,8 +46,13 @@ const AsignacionesPage = () => {
   const [asignaciones, setAsignaciones] = useState([]);
   const [loadingResumen, setLoadingResumen] = useState(false);
   const [errorResumen, setErrorResumen] = useState(null);
-  const [filtroMonitorista, setFiltroMonitorista] = useState('');
-  const [filtroStatus, setFiltroStatus] = useState('');
+  const [filtroMonitorista, setFiltroMonitorista] = useState(() => sessionStorage.getItem('asig_resumen_monitorista') || '');
+  const [filtroStatus, setFiltroStatus] = useState(() => sessionStorage.getItem('asig_resumen_status') || '');
+  const [scrollPendiente, setScrollPendiente] = useState(() => {
+    const v = sessionStorage.getItem('asig_resumen_scroll');
+    if (v !== null) sessionStorage.removeItem('asig_resumen_scroll');
+    return v !== null ? Number(v) : null;
+  });
 
   const buscarCasos = async () => {
     if (!folio.trim()) {
@@ -96,6 +105,13 @@ const AsignacionesPage = () => {
     if (tab === 'resumen') cargarResumen();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab]);
+
+  useEffect(() => {
+    if (scrollPendiente !== null && asignaciones.length > 0) {
+      requestAnimationFrame(() => window.scrollTo({ top: scrollPendiente, behavior: 'instant' }));
+      setScrollPendiente(null);
+    }
+  }, [asignaciones, scrollPendiente]);
 
   const toggleSeleccion = (id_conv, e) => {
     e.stopPropagation();
@@ -208,7 +224,7 @@ const AsignacionesPage = () => {
                 className="asig-filtro-input"
                 placeholder="Nombre de usuario"
                 value={filtroMonitorista}
-                onChange={(e) => setFiltroMonitorista(e.target.value)}
+                onChange={(e) => { setFiltroMonitorista(e.target.value); sessionStorage.setItem('asig_resumen_monitorista', e.target.value); }}
               />
             </div>
             <div className="asig-filtro-grupo">
@@ -216,7 +232,7 @@ const AsignacionesPage = () => {
               <select
                 className="asig-filtro-input"
                 value={filtroStatus}
-                onChange={(e) => setFiltroStatus(e.target.value)}
+                onChange={(e) => { setFiltroStatus(e.target.value); sessionStorage.setItem('asig_resumen_status', e.target.value); }}
               >
                 <option value="">Todos</option>
                 <option value="asignado">Asignado</option>
@@ -252,7 +268,7 @@ const AsignacionesPage = () => {
                     <tr
                       key={a.id}
                       className="resumen-fila"
-                      onClick={() => navigate(`/incidente/${a.id_conv}`)}
+                      onClick={() => { sessionStorage.setItem('asig_resumen_scroll', window.scrollY); navigate(`/incidente/${a.id_conv}`); }}
                     >
                       <td>
                         <span className="resumen-caso-titulo">{a.title || a.id_conv}</span>
