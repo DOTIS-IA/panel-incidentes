@@ -54,19 +54,39 @@ const Inicio = () => {
     const stored = sessionStorage.getItem('inicio_panel');
     return stored === null ? true : stored === 'true';
   });
+  const [visitadosPanelVisible, setVisitadosPanelVisible] = useState(() => {
+    const stored = sessionStorage.getItem('inicio_visitados_panel');
+    return stored === null ? true : stored === 'true';
+  });
   const [reporteSeleccionadoId, setReporteSeleccionadoId] = useState(() => {
     const stored = sessionStorage.getItem('inicio_reporte_sel');
     return stored ? Number(stored) : null;
   });
-  const [previewId, setPreviewId] = useState(() => sessionStorage.getItem('inicio_preview_id') || null);
+  const [previewId, setPreviewId] = useState(() => {
+    const stored = sessionStorage.getItem('inicio_preview_id');
+    if (!stored) return null;
+    const initialTab = sessionStorage.getItem('inicio_tab') || 'busquedas';
+    if (initialTab === 'visitados') {
+      return obtenerHistorial().find((i) => i.id_conv_eleven === stored) ? stored : null;
+    }
+    return stored;
+  });
 
   const reporteSeleccionado = reportes.find((r) => r.id === reporteSeleccionadoId) || null;
-  const previewData = previewId && reporteSeleccionado
-    ? (reporteSeleccionado.resultados || []).find((i) => i.id_conv_eleven === previewId) ?? null
-    : null;
+  const previewData = (() => {
+    if (!previewId) return null;
+    if (tab === 'busquedas' && reporteSeleccionado) {
+      return (reporteSeleccionado.resultados || []).find((i) => i.id_conv_eleven === previewId) ?? null;
+    }
+    if (tab === 'visitados') {
+      return historial.find((i) => i.id_conv_eleven === previewId) ?? null;
+    }
+    return null;
+  })();
 
   useEffect(() => { sessionStorage.setItem('inicio_tab', tab); }, [tab]);
   useEffect(() => { sessionStorage.setItem('inicio_panel', panelVisible); }, [panelVisible]);
+  useEffect(() => { sessionStorage.setItem('inicio_visitados_panel', visitadosPanelVisible); }, [visitadosPanelVisible]);
   useEffect(() => {
     if (previewId !== null) {
       sessionStorage.setItem('inicio_preview_id', previewId);
@@ -117,6 +137,11 @@ const Inicio = () => {
     setHistorial([]);
   };
 
+  const handleTabChange = (newTab) => {
+    if (newTab !== tab) setPreviewId(null);
+    setTab(newTab);
+  };
+
   const handleCardClick = (reporte) => {
     if (panelVisible) {
       if (reporteSeleccionadoId !== reporte.id) setPreviewId(null);
@@ -127,7 +152,7 @@ const Inicio = () => {
   };
 
   return (
-    <div className={`inicio-page${panelVisible && tab === 'busquedas' && reportes.length > 0 ? ' inicio-page--wide' : ''}`}>
+    <div className={`inicio-page${(panelVisible && tab === 'busquedas' && reportes.length > 0) || (visitadosPanelVisible && tab === 'visitados' && historial.length > 0) ? ' inicio-page--wide' : ''}`}>
 
       <div className="inicio-header">
         <div>
@@ -149,14 +174,14 @@ const Inicio = () => {
         <div className="inicio-tabs">
           <button
             className={`inicio-tab ${tab === 'busquedas' ? 'is-active' : ''}`}
-            onClick={() => setTab('busquedas')}
+            onClick={() => handleTabChange('busquedas')}
           >
             Búsquedas
             {reportes.length > 0 && <span className="tab-badge">{reportes.length}</span>}
           </button>
           <button
             className={`inicio-tab ${tab === 'visitados' ? 'is-active' : ''}`}
-            onClick={() => setTab('visitados')}
+            onClick={() => handleTabChange('visitados')}
           >
             Visitados
             {historial.length > 0 && <span className="tab-badge">{historial.length}</span>}
@@ -174,6 +199,19 @@ const Inicio = () => {
               <line x1="9" y1="1.5" x2="9" y2="13.5" stroke="currentColor" strokeWidth="1.4" />
             </svg>
             {panelVisible ? 'Ocultar preview' : 'Mostrar preview'}
+          </button>
+        )}
+        {tab === 'visitados' && historial.length > 0 && (
+          <button
+            className={`btn-toggle-panel${visitadosPanelVisible ? ' btn-toggle-panel--activo' : ''}`}
+            onClick={() => setVisitadosPanelVisible((v) => !v)}
+            title={visitadosPanelVisible ? 'Ocultar panel de vista previa' : 'Mostrar panel de vista previa'}
+          >
+            <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+              <rect x="1" y="1" width="13" height="13" rx="2" stroke="currentColor" strokeWidth="1.4" fill="none" />
+              <line x1="9" y1="1.5" x2="9" y2="13.5" stroke="currentColor" strokeWidth="1.4" />
+            </svg>
+            {visitadosPanelVisible ? 'Ocultar preview' : 'Mostrar preview'}
           </button>
         )}
       </div>
@@ -353,39 +391,82 @@ const Inicio = () => {
             />
           )}
           {historial.length > 0 && (
-            <div className="inicio-grid">
-              {historial.map((item) => (
-                <div
-                  key={item.id_conv_eleven}
-                  className="incidente-row incidente-row--standalone"
-                  onClick={() => { sessionStorage.setItem('inicio_visitados_scroll', window.scrollY); navigate(`/incidente/${item.id_conv_eleven}`); }}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => e.key === 'Enter' && navigate(`/incidente/${item.id_conv_eleven}`)}
-                >
-                  <div className="incidente-row-top">
-                    <span className="resultado-tag">{item.extortion_name || 'Sin tipo'}</span>
-                    <div className="incidente-row-actions">
-                      <span className="resultado-fecha">{formatDateTime(item.visitadoEn)}</span>
-                      <button
-                        className="btn-icon btn-delete"
-                        onClick={(e) => handleEliminarVisita(item.id_conv_eleven, e)}
-                        title="Eliminar del historial"
-                      >
-                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                          <path d="M2 3.5h10M5.5 3.5V2.5a1 1 0 012 0v1M6 6v4M8 6v4M3 3.5l.7 8a1 1 0 001 .9h4.6a1 1 0 001-.9l.7-8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      </button>
+            <div className={`visitados-layout${visitadosPanelVisible ? ' con-panel' : ''}`}>
+              <div className="inicio-grid">
+                {historial.map((item) => {
+                  const seleccionado = previewId === item.id_conv_eleven;
+                  return (
+                    <div
+                      key={item.id_conv_eleven}
+                      className={`incidente-row incidente-row--standalone${seleccionado ? ' incidente-row--seleccionado' : ''}`}
+                      onClick={() => {
+                        if (visitadosPanelVisible) {
+                          setPreviewId(item.id_conv_eleven);
+                        } else {
+                          sessionStorage.setItem('inicio_visitados_scroll', window.scrollY);
+                          navigate(`/incidente/${item.id_conv_eleven}`);
+                        }
+                      }}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key !== 'Enter') return;
+                        if (visitadosPanelVisible) {
+                          setPreviewId(item.id_conv_eleven);
+                        } else {
+                          sessionStorage.setItem('inicio_visitados_scroll', window.scrollY);
+                          navigate(`/incidente/${item.id_conv_eleven}`);
+                        }
+                      }}
+                    >
+                      <div className="incidente-row-top">
+                        <span className="resultado-tag">{item.extortion_name || 'Sin tipo'}</span>
+                        <div className="incidente-row-actions">
+                          <span className="resultado-fecha">{formatDateTime(item.visitadoEn)}</span>
+                          <button
+                            className="btn-icon btn-delete"
+                            onClick={(e) => handleEliminarVisita(item.id_conv_eleven, e)}
+                            title="Eliminar del historial"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                              <path d="M2 3.5h10M5.5 3.5V2.5a1 1 0 012 0v1M6 6v4M8 6v4M3 3.5l.7 8a1 1 0 001 .9h4.6a1 1 0 001-.9l.7-8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                      <p className="incidente-titulo">{item.title || item.id_conv_eleven}</p>
+                      <p className="incidente-summary">{item.summary || 'Sin resumen disponible.'}</p>
+                      <div className="incidente-foot">
+                        <span>ID: {item.id_conv_eleven}</span>
+                        <span>Agente: {item.agent_name || item.id_agent || 'N/A'}</span>
+                      </div>
                     </div>
-                  </div>
-                  <p className="incidente-titulo">{item.title || item.id_conv_eleven}</p>
-                  <p className="incidente-summary">{item.summary || 'Sin resumen disponible.'}</p>
-                  <div className="incidente-foot">
-                    <span>ID: {item.id_conv_eleven}</span>
-                    <span>Agente: {item.agent_name || item.id_agent || 'N/A'}</span>
-                  </div>
-                </div>
-              ))}
+                  );
+                })}
+              </div>
+
+              {visitadosPanelVisible && (
+                previewData ? (
+                  <SidePreviewPanel
+                    data={previewData}
+                    onClose={() => setPreviewId(null)}
+                    onVerDetalle={(id) => {
+                      sessionStorage.setItem('inicio_visitados_scroll', window.scrollY);
+                      navigate(`/incidente/${id}`);
+                    }}
+                  />
+                ) : (
+                  <aside className="preview-panel">
+                    <div className="preview-empty">
+                      <svg width="32" height="32" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+                        <rect x="4" y="6" width="24" height="20" rx="3" stroke="#4B5563" strokeWidth="1.6" fill="none" />
+                        <path d="M9 12h14M9 17h10M9 22h6" stroke="#4B5563" strokeWidth="1.4" strokeLinecap="round" />
+                      </svg>
+                      <p>Selecciona un incidente para ver su preview</p>
+                    </div>
+                  </aside>
+                )
+              )}
             </div>
           )}
         </>

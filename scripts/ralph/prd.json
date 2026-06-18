@@ -51,8 +51,8 @@
         "cd frontend && npm run build pasa"
       ],
       "priority": 3,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Agregado layout lista + panel sticky a la pestaña Visitados. Nuevo estado visitadosPanelVisible (inicio_visitados_panel, default true). previewData ahora también busca en historial cuando tab='visitados'. handleTabChange limpia previewId al cambiar de pestaña. previewId se valida contra historial en el inicializador de useState para visitados. Clic en visitado selecciona para preview (en vez de navegar) cuando panel visible; onVerDetalle preserva inicio_visitados_scroll. Botón toggle para visitados añadido a la fila de tabs. CSS: .visitados-layout + .visitados-layout.con-panel + .incidente-row--seleccionado + responsive. lint y build pasan."
     },
     {
       "id": "US-004",

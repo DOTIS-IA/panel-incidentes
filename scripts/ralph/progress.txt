@@ -24,6 +24,15 @@
 - **Validación:** `npm run lint` ✓ | `npm run build` ✓
 - **Patrones nuevos:** Render condicional entre SidePreviewPanel y aside.preview-panel en el mismo slot del grid — patrón reutilizable para US-003/004/005.
 
+### US-003 — Agregar SidePreviewPanel + toggle en Inicio -> pestana Visitados
+- **Qué se hizo:** En Inicio.jsx, pestaña Visitados: añadido estado `visitadosPanelVisible` (sessionStorage `inicio_visitados_panel`, default true). `previewData` ahora también busca en `historial` cuando `tab === 'visitados'`. Añadido `handleTabChange` que limpia `previewId` al cambiar de pestaña; botones de tab ahora llaman `handleTabChange`. Inicializador de `previewId` valida contra `obtenerHistorial()` cuando la tab inicial es visitados. Render de Visitados: layout grid `.visitados-layout.con-panel`, clic en visitado selecciona para preview (cuando panel visible) en vez de navegar; `onVerDetalle` preserva `inicio_visitados_scroll`. Botón toggle en fila de tabs para visitados. Panel vacío muestra "Selecciona un incidente para ver su preview". `inicio-page--wide` también se activa para visitados con panel.
+- **Archivos tocados:**
+  - `frontend/src/pages/Inicio.jsx`
+  - `frontend/src/pages/Inicio.css`
+- **CSS añadido:** `.visitados-layout`, `.visitados-layout.con-panel` (grid 1fr 380px), `.incidente-row--seleccionado` (border primary + box-shadow). Responsive: `.visitados-layout.con-panel` colapsa a 1 columna ≤900px.
+- **Validación:** `npm run lint` ✓ | `npm run build` ✓
+- **Patrones nuevos:** handleTabChange como patrón para limpiar previewId al cambiar tab — reutilizable en AsignacionesPage para US-004/005. previewData con IIFE que ramifica por tab activa — más limpio que múltiples variables derivadas.
+
 ### US-001 — Crear componente reutilizable SidePreviewPanel.jsx
 - **Qué se hizo:** Creado el componente SidePreviewPanel con su archivo CSS siguiendo la convención de carpeta-por-componente (AsignarModal/, Sidebar/).
 - **Archivos creados:**

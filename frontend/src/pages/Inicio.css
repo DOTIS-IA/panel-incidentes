@@ -191,6 +191,18 @@
   align-items: start;
 }
 
+/* ─── Layout visitados ───────────────────────────────────────────────────── */
+.visitados-layout {
+  display: block;
+}
+
+.visitados-layout.con-panel {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 24px;
+  align-items: start;
+}
+
 /* ─── Grid de reportes ───────────────────────────────────────────────────── */
 .inicio-grid {
   display: flex;
@@ -373,6 +385,11 @@
   border: 1px solid var(--border);
   border-radius: 14px;
   padding: 16px 18px;
+}
+
+.incidente-row--seleccionado {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 1px var(--color-primary), 0 2px 12px rgba(0, 0, 0, 0.28);
 }
 
 .incidente-row-actions {
@@ -559,7 +576,8 @@
     text-align: center;
   }
 
-  .busquedas-layout.con-panel {
+  .busquedas-layout.con-panel,
+  .visitados-layout.con-panel {
     grid-template-columns: 1fr;
   }
 
