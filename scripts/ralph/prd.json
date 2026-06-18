@@ -18,8 +18,8 @@
         "cd frontend && npm run build pasa"
       ],
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Creados SidePreviewPanel.jsx y SidePreviewPanel.css en components/SidePreviewPanel/. El componente acepta props {data, onClose, onVerDetalle}, normaliza id con id_conv_eleven ?? id_conv, muestra badge de tipo + fecha en header con boton X, cuerpo con id/titulo/resumen/folio(opcional)/agente(opcional), y footer con boton 'Ver detalle completo'. Maneja data null con estado vacio. lint y build pasan."
     },
     {
       "id": "US-002",

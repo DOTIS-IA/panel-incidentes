@@ -16,4 +16,12 @@
 
 ## Iteration Log
 
-(vacio — el loop hace append aqui: US-XXX, que se hizo, archivos tocados, validacion)
+### US-001 — Crear componente reutilizable SidePreviewPanel.jsx
+- **Qué se hizo:** Creado el componente SidePreviewPanel con su archivo CSS siguiendo la convención de carpeta-por-componente (AsignarModal/, Sidebar/).
+- **Archivos creados:**
+  - `frontend/src/components/SidePreviewPanel/SidePreviewPanel.jsx`
+  - `frontend/src/components/SidePreviewPanel/SidePreviewPanel.css`
+- **Lógica:** Props {data, onClose, onVerDetalle}. Normalización id = id_conv_eleven ?? id_conv. Manejo null → estado vacío. Formateo de fecha con Intl.DateTimeFormat('es-MX'). Badge de tipo + fecha en header con botón X. Folio y agente opcionales (se ocultan si no hay). Botón "Ver detalle completo" llama onVerDetalle(idConv).
+- **CSS:** Clase .side-preview-panel con position:sticky top:24px, max-height calc(100vh-140px), fallback @media ≤900px a position:static. Sigue el patrón de .preview-panel en Inicio.css.
+- **Validación:** `npm run lint` ✓ | `npm run build` ✓
+- **Patrones nuevos:** Ninguno adicional — se reutilizaron los ya documentados.
