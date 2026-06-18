@@ -4,6 +4,7 @@ import {
   obtenerReportes, eliminarReporte, limpiarReportes,
   obtenerHistorial, eliminarDelHistorial, limpiarHistorial,
 } from '../utils/Reportescache';
+import SidePreviewPanel from '../components/SidePreviewPanel/SidePreviewPanel';
 import './Inicio.css';
 
 const formatDateTime = (value) => {
@@ -57,11 +58,22 @@ const Inicio = () => {
     const stored = sessionStorage.getItem('inicio_reporte_sel');
     return stored ? Number(stored) : null;
   });
+  const [previewId, setPreviewId] = useState(() => sessionStorage.getItem('inicio_preview_id') || null);
 
   const reporteSeleccionado = reportes.find((r) => r.id === reporteSeleccionadoId) || null;
+  const previewData = previewId && reporteSeleccionado
+    ? (reporteSeleccionado.resultados || []).find((i) => i.id_conv_eleven === previewId) ?? null
+    : null;
 
   useEffect(() => { sessionStorage.setItem('inicio_tab', tab); }, [tab]);
   useEffect(() => { sessionStorage.setItem('inicio_panel', panelVisible); }, [panelVisible]);
+  useEffect(() => {
+    if (previewId !== null) {
+      sessionStorage.setItem('inicio_preview_id', previewId);
+    } else {
+      sessionStorage.removeItem('inicio_preview_id');
+    }
+  }, [previewId]);
 
   useEffect(() => {
     const saved = sessionStorage.getItem('inicio_visitados_scroll');
@@ -81,7 +93,10 @@ const Inicio = () => {
     event.stopPropagation();
     setReportes(eliminarReporte(id));
     if (expandido === id) setExpandido(null);
-    if (reporteSeleccionadoId === id) setReporteSeleccionadoId(null);
+    if (reporteSeleccionadoId === id) {
+      setReporteSeleccionadoId(null);
+      setPreviewId(null);
+    }
   };
 
   const handleLimpiarReportes = () => {
@@ -89,6 +104,7 @@ const Inicio = () => {
     setReportes([]);
     setExpandido(null);
     setReporteSeleccionadoId(null);
+    setPreviewId(null);
   };
 
   const handleEliminarVisita = (id_conv_eleven, event) => {
@@ -103,6 +119,7 @@ const Inicio = () => {
 
   const handleCardClick = (reporte) => {
     if (panelVisible) {
+      if (reporteSeleccionadoId !== reporte.id) setPreviewId(null);
       setReporteSeleccionadoId((prev) => (prev === reporte.id ? null : reporte.id));
     } else {
       setExpandido((prev) => (prev === reporte.id ? null : reporte.id));
@@ -253,65 +270,73 @@ const Inicio = () => {
 
               {/* ── Panel de preview ── */}
               {panelVisible && (
-                <aside className="preview-panel">
-                  {!reporteSeleccionado ? (
-                    <div className="preview-empty">
-                      <svg width="32" height="32" viewBox="0 0 32 32" fill="none" aria-hidden="true">
-                        <rect x="4" y="6" width="24" height="20" rx="3" stroke="#4B5563" strokeWidth="1.6" fill="none" />
-                        <path d="M9 12h14M9 17h10M9 22h6" stroke="#4B5563" strokeWidth="1.4" strokeLinecap="round" />
-                      </svg>
-                      <p>Selecciona un reporte para ver su contenido</p>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="preview-header">
-                        <div className="preview-header-top">
-                          <span className="preview-badge">
-                            {reporteSeleccionado.total} incidente{reporteSeleccionado.total !== 1 ? 's' : ''}
-                          </span>
-                          <span className="preview-fecha">{formatDateTime(reporteSeleccionado.generadoEn)}</span>
+                previewData ? (
+                  <SidePreviewPanel
+                    data={previewData}
+                    onClose={() => setPreviewId(null)}
+                    onVerDetalle={(id) => navigate(`/incidente/${id}`)}
+                  />
+                ) : (
+                  <aside className="preview-panel">
+                    {!reporteSeleccionado ? (
+                      <div className="preview-empty">
+                        <svg width="32" height="32" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+                          <rect x="4" y="6" width="24" height="20" rx="3" stroke="#4B5563" strokeWidth="1.6" fill="none" />
+                          <path d="M9 12h14M9 17h10M9 22h6" stroke="#4B5563" strokeWidth="1.4" strokeLinecap="round" />
+                        </svg>
+                        <p>Selecciona un reporte para ver su contenido</p>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="preview-header">
+                          <div className="preview-header-top">
+                            <span className="preview-badge">
+                              {reporteSeleccionado.total} incidente{reporteSeleccionado.total !== 1 ? 's' : ''}
+                            </span>
+                            <span className="preview-fecha">{formatDateTime(reporteSeleccionado.generadoEn)}</span>
+                          </div>
+                          <p className="preview-filtros-texto">{formatFiltros(reporteSeleccionado.filtros)}</p>
                         </div>
-                        <p className="preview-filtros-texto">{formatFiltros(reporteSeleccionado.filtros)}</p>
-                      </div>
 
-                      <div className="preview-lista">
-                        {Array.isArray(reporteSeleccionado.resultados) && reporteSeleccionado.resultados.length > 0 ? (
-                          reporteSeleccionado.resultados.map((item) => (
-                            <div
-                              key={item.id_conv_eleven}
-                              className="preview-incidente"
-                              onClick={() => navigate(`/incidente/${item.id_conv_eleven}`)}
-                              role="button"
-                              tabIndex={0}
-                              onKeyDown={(e) => e.key === 'Enter' && navigate(`/incidente/${item.id_conv_eleven}`)}
-                            >
-                              <div className="preview-inc-top">
-                                <span className="resultado-tag">{item.extortion_name || 'Sin tipo'}</span>
-                                <span className="preview-inc-fecha">{formatDateTime(item.event_ts)}</span>
+                        <div className="preview-lista">
+                          {Array.isArray(reporteSeleccionado.resultados) && reporteSeleccionado.resultados.length > 0 ? (
+                            reporteSeleccionado.resultados.map((item) => (
+                              <div
+                                key={item.id_conv_eleven}
+                                className="preview-incidente"
+                                onClick={() => setPreviewId(item.id_conv_eleven)}
+                                role="button"
+                                tabIndex={0}
+                                onKeyDown={(e) => e.key === 'Enter' && setPreviewId(item.id_conv_eleven)}
+                              >
+                                <div className="preview-inc-top">
+                                  <span className="resultado-tag">{item.extortion_name || 'Sin tipo'}</span>
+                                  <span className="preview-inc-fecha">{formatDateTime(item.event_ts)}</span>
+                                </div>
+                                <p className="preview-inc-titulo">{item.title || item.id_conv_eleven}</p>
+                                {item.summary && (
+                                  <p className="preview-inc-summary">{item.summary}</p>
+                                )}
+                                <div className="preview-inc-foot">
+                                  <span>ID: {item.id_conv_eleven}</span>
+                                  <span>Agente: {item.agent_name || item.id_agent || 'N/A'}</span>
+                                  {item.folio && <span>Folio: {item.folio}</span>}
+                                </div>
+                                <div className="preview-inc-arrow" aria-hidden="true">
+                                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                                    <path d="M4 2l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                  </svg>
+                                </div>
                               </div>
-                              <p className="preview-inc-titulo">{item.title || item.id_conv_eleven}</p>
-                              {item.summary && (
-                                <p className="preview-inc-summary">{item.summary}</p>
-                              )}
-                              <div className="preview-inc-foot">
-                                <span>ID: {item.id_conv_eleven}</span>
-                                <span>Agente: {item.agent_name || item.id_agent || 'N/A'}</span>
-                                {item.folio && <span>Folio: {item.folio}</span>}
-                              </div>
-                              <div className="preview-inc-arrow" aria-hidden="true">
-                                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                                  <path d="M4 2l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                                </svg>
-                              </div>
-                            </div>
-                          ))
-                        ) : (
-                          <p className="preview-sin-inc">Esta búsqueda no encontró incidentes.</p>
-                        )}
-                      </div>
-                    </>
-                  )}
-                </aside>
+                            ))
+                          ) : (
+                            <p className="preview-sin-inc">Esta búsqueda no encontró incidentes.</p>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </aside>
+                )
               )}
             </div>
           )}

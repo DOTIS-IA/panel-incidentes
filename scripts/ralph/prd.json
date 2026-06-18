@@ -35,8 +35,8 @@
         "cd frontend && npm run build pasa"
       ],
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Integrado SidePreviewPanel en la pestana Busquedas de Inicio.jsx. Estado previewId en sessionStorage (inicio_preview_id). Clic en preview-incidente setea previewId; el aside.preview-panel es reemplazado por <SidePreviewPanel> cuando hay previewData. onClose limpia previewId (vuelve a la lista). onVerDetalle navega a /incidente/:id. previewId se limpia al cambiar de reporte (handleCardClick), al eliminar el reporte seleccionado, y al limpiar todos los reportes. lint y build pasan."
     },
     {
       "id": "US-003",

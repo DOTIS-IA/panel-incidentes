@@ -16,6 +16,14 @@
 
 ## Iteration Log
 
+### US-002 — Integrar SidePreviewPanel en Inicio -> pestana Busquedas
+- **Qué se hizo:** En Inicio.jsx, pestaña Búsquedas: clic en preview-incidente ya no navega directo; en su lugar selecciona el incidente (estado previewId) y muestra <SidePreviewPanel> en el lugar del aside.preview-panel. onClose limpia previewId y vuelve a la lista. onVerDetalle navega a /incidente/:id_conv_eleven. previewId se limpia al cambiar/eliminar/limpiar reportes.
+- **Archivos tocados:**
+  - `frontend/src/pages/Inicio.jsx`
+- **Lógica clave:** previewData derivado de reporteSeleccionado.resultados.find(i => i.id_conv_eleven === previewId). Render condicional: si previewData → <SidePreviewPanel>, si no → aside.preview-panel existente. Claves sessionStorage: inicio_preview_id (nueva). Claves existentes intactas.
+- **Validación:** `npm run lint` ✓ | `npm run build` ✓
+- **Patrones nuevos:** Render condicional entre SidePreviewPanel y aside.preview-panel en el mismo slot del grid — patrón reutilizable para US-003/004/005.
+
 ### US-001 — Crear componente reutilizable SidePreviewPanel.jsx
 - **Qué se hizo:** Creado el componente SidePreviewPanel con su archivo CSS siguiendo la convención de carpeta-por-componente (AsignarModal/, Sidebar/).
 - **Archivos creados:**
