@@ -20,6 +20,10 @@ const AsignacionesPage = () => {
     () => sessionStorage.getItem('asig_casos_panel') !== 'false'
   );
 
+  const [resumenPanelVisible, setResumenPanelVisible] = useState(
+    () => sessionStorage.getItem('asig_resumen_panel') !== 'false'
+  );
+
   const [previewId, setPreviewId] = useState(
     () => sessionStorage.getItem('asig_preview_id') || null
   );
@@ -134,6 +138,17 @@ const AsignacionesPage = () => {
     }
   }, [asignaciones, scrollPendiente]);
 
+  // Valida previewId contra asignaciones al restaurar desde sessionStorage
+  useEffect(() => {
+    if (tab === 'resumen' && asignaciones.length > 0 && previewId) {
+      if (!asignaciones.find((a) => a.id_conv === previewId)) {
+        setPreviewId(null);
+        sessionStorage.removeItem('asig_preview_id');
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [asignaciones]);
+
   const toggleSeleccion = (id_conv, e) => {
     e.stopPropagation();
     setSeleccionados((prev) => {
@@ -183,6 +198,24 @@ const AsignacionesPage = () => {
               <line x1="9" y1="1.5" x2="9" y2="13.5" stroke="currentColor" strokeWidth="1.4" />
             </svg>
             {casosPanelVisible ? 'Ocultar preview' : 'Mostrar preview'}
+          </button>
+        )}
+        {tab === 'resumen' && asignaciones.length > 0 && (
+          <button
+            className={`btn-toggle-panel${resumenPanelVisible ? ' btn-toggle-panel--activo' : ''}`}
+            onClick={() => {
+              const next = !resumenPanelVisible;
+              setResumenPanelVisible(next);
+              sessionStorage.setItem('asig_resumen_panel', String(next));
+              if (!next) { setPreviewId(null); sessionStorage.removeItem('asig_preview_id'); }
+            }}
+            title={resumenPanelVisible ? 'Ocultar panel de vista previa' : 'Mostrar panel de vista previa'}
+          >
+            <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+              <rect x="1" y="1" width="13" height="13" rx="2" stroke="currentColor" strokeWidth="1.4" fill="none" />
+              <line x1="9" y1="1.5" x2="9" y2="13.5" stroke="currentColor" strokeWidth="1.4" />
+            </svg>
+            {resumenPanelVisible ? 'Ocultar preview' : 'Mostrar preview'}
           </button>
         )}
       </div>
@@ -312,41 +345,64 @@ const AsignacionesPage = () => {
             <p className="asig-estado">No hay asignaciones.</p>
           )}
 
-          {asignaciones.length > 0 && (
-            <div className="resumen-tabla-wrapper">
-              <table className="resumen-tabla">
-                <thead>
-                  <tr>
-                    <th>Caso</th>
-                    <th>Monitorista</th>
-                    <th>Asignado por</th>
-                    <th>Fecha asignación</th>
-                    <th>Estado</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {asignaciones.map((a) => (
-                    <tr
-                      key={a.id}
-                      className="resumen-fila"
-                      onClick={() => { sessionStorage.setItem('asig_resumen_scroll', window.scrollY); navigate(`/incidente/${a.id_conv}`); }}
-                    >
-                      <td>
-                        <span className="resumen-caso-titulo">{a.title || a.id_conv}</span>
-                        {a.folio && <span className="resumen-folio"> · {a.folio}</span>}
-                      </td>
-                      <td>{a.assigned_to_username}</td>
-                      <td>{a.assigned_by_username}</td>
-                      <td>{formatDate(a.assigned_at)}</td>
-                      <td>
-                        <span className={`badge-asig-status ${a.status}`}>{a.status}</span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+          {asignaciones.length > 0 && (() => {
+            const previewData = asignaciones.find((a) => a.id_conv === previewId) ?? null;
+            return (
+              <div className={`asig-resumen-layout${resumenPanelVisible ? ' con-panel' : ''}`}>
+                <div className="resumen-tabla-wrapper">
+                  <table className="resumen-tabla">
+                    <thead>
+                      <tr>
+                        <th>Caso</th>
+                        <th>Monitorista</th>
+                        <th>Asignado por</th>
+                        <th>Fecha asignación</th>
+                        <th>Estado</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {asignaciones.map((a) => (
+                        <tr
+                          key={a.id}
+                          className={`resumen-fila${resumenPanelVisible && previewId === a.id_conv ? ' resumen-fila--seleccionada' : ''}`}
+                          onClick={() => {
+                            if (resumenPanelVisible) {
+                              setPreviewId(a.id_conv);
+                              sessionStorage.setItem('asig_preview_id', a.id_conv);
+                            } else {
+                              sessionStorage.setItem('asig_resumen_scroll', window.scrollY);
+                              navigate(`/incidente/${a.id_conv}`);
+                            }
+                          }}
+                        >
+                          <td>
+                            <span className="resumen-caso-titulo">{a.title || a.id_conv}</span>
+                            {a.folio && <span className="resumen-folio"> · {a.folio}</span>}
+                          </td>
+                          <td>{a.assigned_to_username}</td>
+                          <td>{a.assigned_by_username}</td>
+                          <td>{formatDate(a.assigned_at)}</td>
+                          <td>
+                            <span className={`badge-asig-status ${a.status}`}>{a.status}</span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {resumenPanelVisible && (
+                  <SidePreviewPanel
+                    data={previewData}
+                    onClose={() => { setPreviewId(null); sessionStorage.removeItem('asig_preview_id'); }}
+                    onVerDetalle={(id) => {
+                      sessionStorage.setItem('asig_resumen_scroll', window.scrollY);
+                      navigate(`/incidente/${id}`);
+                    }}
+                  />
+                )}
+              </div>
+            );
+          })()}
         </>
       )}
 

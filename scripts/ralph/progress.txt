@@ -42,6 +42,15 @@
 - **Validación:** `npm run lint` ✓ | `npm run build` ✓
 - **Patrones nuevos:** IIFE inline `{incidentes.length > 0 && (() => { const previewData = ...; return (...) })()}` para derivar previewData dentro del JSX sin agregar estado extra — alternativa al patrón de variable derivada fuera del render.
 
+### US-005 — Integrar SidePreviewPanel + toggle en Asignaciones -> pestana Resumen
+- **Qué se hizo:** En AsignacionesPage.jsx, pestaña Resumen: añadido estado `resumenPanelVisible` (asig_resumen_panel, default true). Toggle button en `asig-tabs` (visible cuando hay asignaciones). Layout `.asig-resumen-layout.con-panel` (grid 1fr 380px) wrappea la tabla y el panel. Clic en fila selecciona para preview (`asig_preview_id = id_conv`) cuando panel visible; navega directo cuando oculto (guardando `asig_resumen_scroll`). `onVerDetalle` guarda scroll antes de navegar. `useEffect` valida `previewId` contra `asignaciones` tras carga (limpia si no existe). Fila seleccionada con `.resumen-fila--seleccionada`.
+- **Archivos tocados:**
+  - `frontend/src/pages/AsignacionesPage.jsx`
+  - `frontend/src/pages/AsignacionesPage.css`
+- **CSS añadido:** `.asig-resumen-layout` + `.asig-resumen-layout.con-panel` (grid 1fr 380px, colapsa a 1 columna ≤900px), `.resumen-fila--seleccionada` (background accent 8%).
+- **Validación:** `npm run lint` ✓ | `npm run build` ✓
+- **Patrones nuevos:** useEffect de validación de previewId post-carga de lista async — útil cuando la lista carga después del init del estado desde sessionStorage.
+
 ### US-001 — Crear componente reutilizable SidePreviewPanel.jsx
 - **Qué se hizo:** Creado el componente SidePreviewPanel con su archivo CSS siguiendo la convención de carpeta-por-componente (AsignarModal/, Sidebar/).
 - **Archivos creados:**

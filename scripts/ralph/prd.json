@@ -84,8 +84,8 @@
         "cd frontend && npm run build pasa"
       ],
       "priority": 5,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Integrado SidePreviewPanel en la pestaña Resumen de AsignacionesPage. Nuevo estado resumenPanelVisible (asig_resumen_panel, default true). Toggle button añadido en asig-tabs (visible cuando hay asignaciones en Resumen). Layout .asig-resumen-layout.con-panel (grid 1fr 380px) wrappea tabla + panel. Clic en fila selecciona para preview (asig_preview_id = id_conv) cuando panel visible; navega directo cuando oculto (preservando asig_resumen_scroll). onVerDetalle también guarda asig_resumen_scroll antes de navegar. Validación de previewId contra asignaciones en useEffect post-carga. Fila activa styled con .resumen-fila--seleccionada. CSS: .asig-resumen-layout + .asig-resumen-layout.con-panel + .resumen-fila--seleccionada + responsive ≤900px. lint y build pasan."
     }
   ]
 }
