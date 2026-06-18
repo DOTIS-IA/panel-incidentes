@@ -33,6 +33,15 @@
 - **Validación:** `npm run lint` ✓ | `npm run build` ✓
 - **Patrones nuevos:** handleTabChange como patrón para limpiar previewId al cambiar tab — reutilizable en AsignacionesPage para US-004/005. previewData con IIFE que ramifica por tab activa — más limpio que múltiples variables derivadas.
 
+### US-004 — Integrar SidePreviewPanel + toggle en Asignaciones -> pestana Casos
+- **Qué se hizo:** En AsignacionesPage.jsx, pestaña Casos: añadidos estados `casosPanelVisible` (asig_casos_panel, default true) y `previewId` (asig_preview_id). `handleTabChange` limpia `asig_preview_id` al cambiar de tab; botones de tab usan `handleTabChange`. Toggle button añadido en `.asig-tabs` (visible solo cuando hay resultados en Casos). Layout `.asig-casos-layout.con-panel` (grid 1fr 380px) wrappea la lista y el panel. Card `onClick` selecciona para preview cuando panel visible; navega directo cuando panel oculto. Checkbox `stopPropagation` intacto — selección múltiple y toolbar Asignar siguen funcionando. `previewId` se limpia en `buscarCasos` y `limpiarBusqueda`. `previewData` derivado por IIFE de `incidentes.find(i => i.id_conv_eleven === previewId)`.
+- **Archivos tocados:**
+  - `frontend/src/pages/AsignacionesPage.jsx`
+  - `frontend/src/pages/AsignacionesPage.css`
+- **CSS añadido:** `.btn-toggle-panel` (replica Inicio.css, margin-left:auto para alinearse a la derecha en la fila de tabs), `.asig-casos-layout` + `.asig-casos-layout.con-panel` (grid 1fr 380px, colapsa a 1 columna ≤900px), `.caso-asig-card.preview-activo` (border + box-shadow accent).
+- **Validación:** `npm run lint` ✓ | `npm run build` ✓
+- **Patrones nuevos:** IIFE inline `{incidentes.length > 0 && (() => { const previewData = ...; return (...) })()}` para derivar previewData dentro del JSX sin agregar estado extra — alternativa al patrón de variable derivada fuera del render.
+
 ### US-001 — Crear componente reutilizable SidePreviewPanel.jsx
 - **Qué se hizo:** Creado el componente SidePreviewPanel con su archivo CSS siguiendo la convención de carpeta-por-componente (AsignarModal/, Sidebar/).
 - **Archivos creados:**

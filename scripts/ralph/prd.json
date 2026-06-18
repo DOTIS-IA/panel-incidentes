@@ -68,8 +68,8 @@
         "cd frontend && npm run build pasa"
       ],
       "priority": 4,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Integrado SidePreviewPanel en la pestaña Casos de AsignacionesPage. Estado casosPanelVisible (asig_casos_panel, default true) y previewId (asig_preview_id). handleTabChange limpia asig_preview_id al cambiar de tab. Toggle button en asig-tabs (visible cuando hay resultados). Layout .asig-casos-layout.con-panel (grid 1fr 380px). Card onClick selecciona para preview cuando panel visible (navigga si está oculto). Checkbox stopPropagation intacto. previewId limpiado en buscarCasos y limpiarBusqueda. CSS: .asig-casos-layout, .btn-toggle-panel, .caso-asig-card.preview-activo. lint y build pasan."
     },
     {
       "id": "US-005",

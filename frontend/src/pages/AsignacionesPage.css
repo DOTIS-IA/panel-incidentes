@@ -387,3 +387,61 @@
 .btn-toolbar-asignar:hover {
   opacity: 0.85;
 }
+
+/* ── Toggle panel (replicates Inicio.css btn-toggle-panel) ───────────────── */
+
+.btn-toggle-panel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px 8px 0 0;
+  border-bottom: none;
+  padding: 6px 14px 8px;
+  font-size: 12px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+  margin-bottom: -1px;
+  margin-left: auto;
+}
+
+.btn-toggle-panel:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+.btn-toggle-panel--activo {
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  border-color: var(--border);
+}
+
+/* ── Layout casos + panel ─────────────────────────────────────────────────── */
+
+.asig-casos-layout {
+  display: flex;
+  flex-direction: column;
+}
+
+.asig-casos-layout.con-panel {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .asig-casos-layout.con-panel {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Card en preview activo ───────────────────────────────────────────────── */
+
+.caso-asig-card.preview-activo {
+  border-color: var(--accent, #6366f1);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent, #6366f1) 20%, transparent);
+}

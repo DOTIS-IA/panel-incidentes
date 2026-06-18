@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { incidentesService, assignmentsService } from '../services/api';
 import AsignarModal from '../components/AsignarModal/AsignarModal';
+import SidePreviewPanel from '../components/SidePreviewPanel/SidePreviewPanel';
 import './AsignacionesPage.css';
 
 const formatDate = (value) => {
@@ -14,6 +15,22 @@ const formatDate = (value) => {
 const AsignacionesPage = () => {
   const navigate = useNavigate();
   const [tab, setTab] = useState(() => sessionStorage.getItem('asig_tab') || 'casos');
+
+  const [casosPanelVisible, setCasosPanelVisible] = useState(
+    () => sessionStorage.getItem('asig_casos_panel') !== 'false'
+  );
+
+  const [previewId, setPreviewId] = useState(
+    () => sessionStorage.getItem('asig_preview_id') || null
+  );
+
+  const handleTabChange = (newTab) => {
+    if (newTab !== tab) {
+      setPreviewId(null);
+      sessionStorage.removeItem('asig_preview_id');
+      setTab(newTab);
+    }
+  };
 
   useEffect(() => {
     sessionStorage.setItem('asig_tab', tab);
@@ -64,6 +81,8 @@ const AsignacionesPage = () => {
     setErrorCasos(null);
     setBuscado(true);
     setSeleccionados(new Set());
+    setPreviewId(null);
+    sessionStorage.removeItem('asig_preview_id');
     try {
       const data = await incidentesService.getAll({ folio: folio.trim() });
       sessionStorage.setItem('asig_casos_cache', JSON.stringify({ incidentes: data, folio }));
@@ -83,6 +102,8 @@ const AsignacionesPage = () => {
     setErrorCasos(null);
     setSeleccionados(new Set());
     sessionStorage.removeItem('asig_casos_cache');
+    setPreviewId(null);
+    sessionStorage.removeItem('asig_preview_id');
   };
 
   const cargarResumen = async () => {
@@ -136,16 +157,34 @@ const AsignacionesPage = () => {
       <div className="asig-tabs">
         <button
           className={`asig-tab-btn ${tab === 'casos' ? 'active' : ''}`}
-          onClick={() => setTab('casos')}
+          onClick={() => handleTabChange('casos')}
         >
           Casos
         </button>
         <button
           className={`asig-tab-btn ${tab === 'resumen' ? 'active' : ''}`}
-          onClick={() => setTab('resumen')}
+          onClick={() => handleTabChange('resumen')}
         >
           Resumen
         </button>
+        {tab === 'casos' && incidentes.length > 0 && (
+          <button
+            className={`btn-toggle-panel${casosPanelVisible ? ' btn-toggle-panel--activo' : ''}`}
+            onClick={() => {
+              const next = !casosPanelVisible;
+              setCasosPanelVisible(next);
+              sessionStorage.setItem('asig_casos_panel', String(next));
+              if (!next) { setPreviewId(null); sessionStorage.removeItem('asig_preview_id'); }
+            }}
+            title={casosPanelVisible ? 'Ocultar panel de vista previa' : 'Mostrar panel de vista previa'}
+          >
+            <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+              <rect x="1" y="1" width="13" height="13" rx="2" stroke="currentColor" strokeWidth="1.4" fill="none" />
+              <line x1="9" y1="1.5" x2="9" y2="13.5" stroke="currentColor" strokeWidth="1.4" />
+            </svg>
+            {casosPanelVisible ? 'Ocultar preview' : 'Mostrar preview'}
+          </button>
+        )}
       </div>
 
       {/* ── Tab Casos ─────────────────────────────────────────────────────────── */}
@@ -182,34 +221,56 @@ const AsignacionesPage = () => {
             </p>
           )}
 
-          <div className="casos-asig-lista">
-            {incidentes.map((inc) => {
-              const seleccionado = seleccionados.has(inc.id_conv_eleven);
-              return (
-                <article
-                  key={inc.id_conv_eleven}
-                  className={`caso-asig-card ${seleccionado ? 'seleccionado' : ''}`}
-                  onClick={() => navigate(`/incidente/${inc.id_conv_eleven}`)}
-                >
-                  <input
-                    type="checkbox"
-                    className="caso-checkbox"
-                    checked={seleccionado}
-                    onChange={(e) => toggleSeleccion(inc.id_conv_eleven, e)}
-                    onClick={(e) => e.stopPropagation()}
+          {incidentes.length > 0 && (() => {
+            const previewData = incidentes.find((i) => i.id_conv_eleven === previewId) ?? null;
+            return (
+              <div className={`asig-casos-layout${casosPanelVisible ? ' con-panel' : ''}`}>
+                <div className="casos-asig-lista">
+                  {incidentes.map((inc) => {
+                    const seleccionado = seleccionados.has(inc.id_conv_eleven);
+                    const enPreview = casosPanelVisible && previewId === inc.id_conv_eleven;
+                    return (
+                      <article
+                        key={inc.id_conv_eleven}
+                        className={`caso-asig-card${seleccionado ? ' seleccionado' : ''}${enPreview ? ' preview-activo' : ''}`}
+                        onClick={() => {
+                          if (casosPanelVisible) {
+                            setPreviewId(inc.id_conv_eleven);
+                            sessionStorage.setItem('asig_preview_id', inc.id_conv_eleven);
+                          } else {
+                            navigate(`/incidente/${inc.id_conv_eleven}`);
+                          }
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          className="caso-checkbox"
+                          checked={seleccionado}
+                          onChange={(e) => toggleSeleccion(inc.id_conv_eleven, e)}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <div className="caso-asig-info">
+                          <div className="caso-asig-meta">
+                            <span className="asig-tag">{inc.extortion_name || 'Sin tipo'}</span>
+                            <span className="asig-fecha">{formatDate(inc.event_ts)}</span>
+                          </div>
+                          <p className="caso-asig-titulo">{inc.title || inc.id_conv_eleven}</p>
+                          {inc.folio && <span className="caso-asig-folio">Folio: {inc.folio}</span>}
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+                {casosPanelVisible && (
+                  <SidePreviewPanel
+                    data={previewData}
+                    onClose={() => { setPreviewId(null); sessionStorage.removeItem('asig_preview_id'); }}
+                    onVerDetalle={(id) => navigate(`/incidente/${id}`)}
                   />
-                  <div className="caso-asig-info">
-                    <div className="caso-asig-meta">
-                      <span className="asig-tag">{inc.extortion_name || 'Sin tipo'}</span>
-                      <span className="asig-fecha">{formatDate(inc.event_ts)}</span>
-                    </div>
-                    <p className="caso-asig-titulo">{inc.title || inc.id_conv_eleven}</p>
-                    {inc.folio && <span className="caso-asig-folio">Folio: {inc.folio}</span>}
-                  </div>
-                </article>
-              );
-            })}
-          </div>
+                )}
+              </div>
+            );
+          })()}
         </>
       )}
 
