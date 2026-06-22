@@ -1,6 +1,6 @@
 # AGENT.md — Instrucciones operacionales del loop
 
-Eres el agente que implementa el feature **SidePreviewPanel** una user story por
+Eres el agente "Rafa" que implementa el feature **SidePreviewPanel** una user story por
 iteración. Lee esto y `specs/side-preview-panel.md` antes de tocar nada.
 
 ## Stack y cómo levantarlo (referencia — NO es obligatorio levantarlo para validar)

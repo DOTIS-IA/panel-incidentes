@@ -36,7 +36,7 @@ for (( i=1; i<=MAX_ITER; i++ )); do
   echo "🔁 Iteración $i/$MAX_ITER — $P story(s) pendiente(s)"
   echo "──────────────────────────────────────────────────────────"
 
-  winpty claude.cmd -p --dangerously-skip-permissions "$(cat "$PROMPT")"
+  claude -p --dangerously-skip-permissions --model claude-sonnet-4-6 "$(cat "$PROMPT")"
 
   sleep 3
 done
