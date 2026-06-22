@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { incidentesService, assignmentsService } from '../services/api';
 import AsignarModal from '../components/AsignarModal/AsignarModal';
+import SidePreviewPanel from '../components/SidePreviewPanel/SidePreviewPanel';
 import './AsignacionesPage.css';
 
 const formatDate = (value) => {
@@ -13,7 +14,28 @@ const formatDate = (value) => {
 
 const AsignacionesPage = () => {
   const navigate = useNavigate();
-  const [tab, setTab] = useState('casos');
+  const [tab, setTab] = useState(() => sessionStorage.getItem('asig_tab') || 'casos');
+
+  const [isPanelVisible, setIsPanelVisible] = useState(
+    () => sessionStorage.getItem('asig_panel') !== 'false'
+  );
+
+  
+  const [previewId, setPreviewId] = useState(
+    () => sessionStorage.getItem('asig_preview_id') || null
+  );
+
+  const handleTabChange = (newTab) => {
+    if (newTab !== tab) {
+      setPreviewId(null);
+      sessionStorage.removeItem('asig_preview_id');
+      setTab(newTab);
+    }
+  };
+
+  useEffect(() => {
+    sessionStorage.setItem('asig_tab', tab);
+  }, [tab]);
 
   // ── Tab Casos ────────────────────────────────────────────────────────────────
   const [incidentes, setIncidentes] = useState([]);
@@ -42,8 +64,13 @@ const AsignacionesPage = () => {
   const [asignaciones, setAsignaciones] = useState([]);
   const [loadingResumen, setLoadingResumen] = useState(false);
   const [errorResumen, setErrorResumen] = useState(null);
-  const [filtroMonitorista, setFiltroMonitorista] = useState('');
-  const [filtroStatus, setFiltroStatus] = useState('');
+  const [filtroMonitorista, setFiltroMonitorista] = useState(() => sessionStorage.getItem('asig_resumen_monitorista') || '');
+  const [filtroStatus, setFiltroStatus] = useState(() => sessionStorage.getItem('asig_resumen_status') || '');
+  const [scrollPendiente, setScrollPendiente] = useState(() => {
+    const v = sessionStorage.getItem('asig_resumen_scroll');
+    if (v !== null) sessionStorage.removeItem('asig_resumen_scroll');
+    return v !== null ? Number(v) : null;
+  });
 
   const buscarCasos = async () => {
     if (!folio.trim()) {
@@ -55,6 +82,8 @@ const AsignacionesPage = () => {
     setErrorCasos(null);
     setBuscado(true);
     setSeleccionados(new Set());
+    setPreviewId(null);
+    sessionStorage.removeItem('asig_preview_id');
     try {
       const data = await incidentesService.getAll({ folio: folio.trim() });
       sessionStorage.setItem('asig_casos_cache', JSON.stringify({ incidentes: data, folio }));
@@ -74,6 +103,8 @@ const AsignacionesPage = () => {
     setErrorCasos(null);
     setSeleccionados(new Set());
     sessionStorage.removeItem('asig_casos_cache');
+    setPreviewId(null);
+    sessionStorage.removeItem('asig_preview_id');
   };
 
   const cargarResumen = async () => {
@@ -97,6 +128,24 @@ const AsignacionesPage = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab]);
 
+  useEffect(() => {
+    if (scrollPendiente !== null && asignaciones.length > 0) {
+      requestAnimationFrame(() => window.scrollTo({ top: scrollPendiente, behavior: 'instant' }));
+      setScrollPendiente(null);
+    }
+  }, [asignaciones, scrollPendiente]);
+
+  // Valida previewId contra asignaciones al restaurar desde sessionStorage
+  useEffect(() => {
+    if (tab === 'resumen' && asignaciones.length > 0 && previewId) {
+      if (!asignaciones.find((a) => a.id_conv === previewId)) {
+        setPreviewId(null);
+        sessionStorage.removeItem('asig_preview_id');
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [asignaciones]);
+
   const toggleSeleccion = (id_conv, e) => {
     e.stopPropagation();
     setSeleccionados((prev) => {
@@ -117,19 +166,57 @@ const AsignacionesPage = () => {
         <p className="asig-subtitulo">Asigna casos a monitoristas y revisa el estado de las asignaciones.</p>
       </div>
 
-      <div className="asig-tabs">
-        <button
-          className={`asig-tab-btn ${tab === 'casos' ? 'active' : ''}`}
-          onClick={() => setTab('casos')}
-        >
-          Casos
-        </button>
-        <button
-          className={`asig-tab-btn ${tab === 'resumen' ? 'active' : ''}`}
-          onClick={() => setTab('resumen')}
-        >
-          Resumen
-        </button>
+      <div className="asig-tabs-row">
+        <div className="asig-tabs">
+          <button
+            className={`asig-tab-btn ${tab === 'casos' ? 'active' : ''}`}
+            onClick={() => handleTabChange('casos')}
+          >
+            Casos
+          </button>
+          <button
+            className={`asig-tab-btn ${tab === 'resumen' ? 'active' : ''}`}
+            onClick={() => handleTabChange('resumen')}
+          >
+            Resumen
+          </button>
+        </div>
+        {tab === 'casos' && incidentes.length > 0 && (
+          <button
+            className={`btn-toggle-panel${isPanelVisible ? ' btn-toggle-panel--activo' : ''}`}
+            onClick={() => {
+              const next = !isPanelVisible;
+              setIsPanelVisible(next);
+              sessionStorage.setItem('asig_panel', String(next));
+              if (!next) { setPreviewId(null); sessionStorage.removeItem('asig_preview_id'); }
+            }}
+            title={isPanelVisible ? 'Ocultar panel de vista previa' : 'Mostrar panel de vista previa'}
+          >
+            <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+              <rect x="1" y="1" width="13" height="13" rx="2" stroke="currentColor" strokeWidth="1.4" fill="none" />
+              <line x1="9" y1="1.5" x2="9" y2="13.5" stroke="currentColor" strokeWidth="1.4" />
+            </svg>
+            {isPanelVisible ? 'Ocultar preview' : 'Mostrar preview'}
+          </button>
+        )}
+        {tab === 'resumen' && asignaciones.length > 0 && (
+          <button
+            className={`btn-toggle-panel${isPanelVisible ? ' btn-toggle-panel--activo' : ''}`}
+            onClick={() => {
+              const next = !isPanelVisible;
+              setIsPanelVisible(next);
+              sessionStorage.setItem('asig_panel', String(next));
+              if (!next) { setPreviewId(null); sessionStorage.removeItem('asig_preview_id'); }
+            }}
+            title={isPanelVisible  ? 'Ocultar panel de vista previa' : 'Mostrar panel de vista previa'}
+          >
+            <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+              <rect x="1" y="1" width="13" height="13" rx="2" stroke="currentColor" strokeWidth="1.4" fill="none" />
+              <line x1="9" y1="1.5" x2="9" y2="13.5" stroke="currentColor" strokeWidth="1.4" />
+            </svg>
+            {isPanelVisible ? 'Ocultar preview' : 'Mostrar preview'}
+          </button>
+        )}
       </div>
 
       {/* ── Tab Casos ─────────────────────────────────────────────────────────── */}
@@ -166,34 +253,56 @@ const AsignacionesPage = () => {
             </p>
           )}
 
-          <div className="casos-asig-lista">
-            {incidentes.map((inc) => {
-              const seleccionado = seleccionados.has(inc.id_conv_eleven);
-              return (
-                <article
-                  key={inc.id_conv_eleven}
-                  className={`caso-asig-card ${seleccionado ? 'seleccionado' : ''}`}
-                  onClick={() => navigate(`/incidente/${inc.id_conv_eleven}`)}
-                >
-                  <input
-                    type="checkbox"
-                    className="caso-checkbox"
-                    checked={seleccionado}
-                    onChange={(e) => toggleSeleccion(inc.id_conv_eleven, e)}
-                    onClick={(e) => e.stopPropagation()}
+          {incidentes.length > 0 && (() => {
+            const previewData = incidentes.find((i) => i.id_conv_eleven === previewId) ?? null;
+            return (
+              <div className={`asig-casos-layout${isPanelVisible ? ' con-panel' : ''}`}>
+                <div className="casos-asig-lista">
+                  {incidentes.map((inc) => {
+                    const seleccionado = seleccionados.has(inc.id_conv_eleven);
+                    const enPreview = isPanelVisible && previewId === inc.id_conv_eleven;
+                    return (
+                      <article
+                        key={inc.id_conv_eleven}
+                        className={`caso-asig-card${seleccionado ? ' seleccionado' : ''}${enPreview ? ' preview-activo' : ''}`}
+                        onClick={() => {
+                          if (isPanelVisible) {
+                            setPreviewId(inc.id_conv_eleven);
+                            sessionStorage.setItem('asig_preview_id', inc.id_conv_eleven);
+                          } else {
+                            navigate(`/incidente/${inc.id_conv_eleven}`);
+                          }
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          className="caso-checkbox"
+                          checked={seleccionado}
+                          onChange={(e) => toggleSeleccion(inc.id_conv_eleven, e)}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <div className="caso-asig-info">
+                          <div className="caso-asig-meta">
+                            <span className="asig-tag">{inc.extortion_name || 'Sin tipo'}</span>
+                            <span className="asig-fecha">{formatDate(inc.event_ts)}</span>
+                          </div>
+                          <p className="caso-asig-titulo">{inc.title || inc.id_conv_eleven}</p>
+                          {inc.folio && <span className="caso-asig-folio">Folio: {inc.folio}</span>}
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+                {isPanelVisible && (
+                  <SidePreviewPanel
+                    data={previewData}
+                    onClose={() => { setPreviewId(null); sessionStorage.removeItem('asig_preview_id'); }}
+                    onVerDetalle={(id) => navigate(`/incidente/${id}`)}
                   />
-                  <div className="caso-asig-info">
-                    <div className="caso-asig-meta">
-                      <span className="asig-tag">{inc.extortion_name || 'Sin tipo'}</span>
-                      <span className="asig-fecha">{formatDate(inc.event_ts)}</span>
-                    </div>
-                    <p className="caso-asig-titulo">{inc.title || inc.id_conv_eleven}</p>
-                    {inc.folio && <span className="caso-asig-folio">Folio: {inc.folio}</span>}
-                  </div>
-                </article>
-              );
-            })}
-          </div>
+                )}
+              </div>
+            );
+          })()}
         </>
       )}
 
@@ -208,7 +317,7 @@ const AsignacionesPage = () => {
                 className="asig-filtro-input"
                 placeholder="Nombre de usuario"
                 value={filtroMonitorista}
-                onChange={(e) => setFiltroMonitorista(e.target.value)}
+                onChange={(e) => { setFiltroMonitorista(e.target.value); sessionStorage.setItem('asig_resumen_monitorista', e.target.value); }}
               />
             </div>
             <div className="asig-filtro-grupo">
@@ -216,7 +325,7 @@ const AsignacionesPage = () => {
               <select
                 className="asig-filtro-input"
                 value={filtroStatus}
-                onChange={(e) => setFiltroStatus(e.target.value)}
+                onChange={(e) => { setFiltroStatus(e.target.value); sessionStorage.setItem('asig_resumen_status', e.target.value); }}
               >
                 <option value="">Todos</option>
                 <option value="asignado">Asignado</option>
@@ -235,41 +344,64 @@ const AsignacionesPage = () => {
             <p className="asig-estado">No hay asignaciones.</p>
           )}
 
-          {asignaciones.length > 0 && (
-            <div className="resumen-tabla-wrapper">
-              <table className="resumen-tabla">
-                <thead>
-                  <tr>
-                    <th>Caso</th>
-                    <th>Monitorista</th>
-                    <th>Asignado por</th>
-                    <th>Fecha asignación</th>
-                    <th>Estado</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {asignaciones.map((a) => (
-                    <tr
-                      key={a.id}
-                      className="resumen-fila"
-                      onClick={() => navigate(`/incidente/${a.id_conv}`)}
-                    >
-                      <td>
-                        <span className="resumen-caso-titulo">{a.title || a.id_conv}</span>
-                        {a.folio && <span className="resumen-folio"> · {a.folio}</span>}
-                      </td>
-                      <td>{a.assigned_to_username}</td>
-                      <td>{a.assigned_by_username}</td>
-                      <td>{formatDate(a.assigned_at)}</td>
-                      <td>
-                        <span className={`badge-asig-status ${a.status}`}>{a.status}</span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+          {asignaciones.length > 0 && (() => {
+            const previewData = asignaciones.find((a) => a.id_conv === previewId) ?? null;
+            return (
+              <div className={`asig-resumen-layout${isPanelVisible ? ' con-panel' : ''}`}>
+                <div className="resumen-tabla-wrapper">
+                  <table className="resumen-tabla">
+                    <thead>
+                      <tr>
+                        <th>Caso</th>
+                        <th>Monitorista</th>
+                        <th>Asignado por</th>
+                        <th>Fecha asignación</th>
+                        <th>Estado</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {asignaciones.map((a) => (
+                        <tr
+                          key={a.id}
+                          className={`resumen-fila${isPanelVisible && previewId === a.id_conv ? ' resumen-fila--seleccionada' : ''}`}
+                          onClick={() => {
+                            if (isPanelVisible) {
+                              setPreviewId(a.id_conv);
+                              sessionStorage.setItem('asig_preview_id', a.id_conv);
+                            } else {
+                              sessionStorage.setItem('asig_resumen_scroll', window.scrollY);
+                              navigate(`/incidente/${a.id_conv}`);
+                            }
+                          }}
+                        >
+                          <td>
+                            <span className="resumen-caso-titulo">{a.title || a.id_conv}</span>
+                            {a.folio && <span className="resumen-folio"> · {a.folio}</span>}
+                          </td>
+                          <td>{a.assigned_to_username}</td>
+                          <td>{a.assigned_by_username}</td>
+                          <td>{formatDate(a.assigned_at)}</td>
+                          <td>
+                            <span className={`badge-asig-status ${a.status}`}>{a.status}</span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {isPanelVisible && (
+                  <SidePreviewPanel
+                    data={previewData}
+                    onClose={() => { setPreviewId(null); sessionStorage.removeItem('asig_preview_id'); }}
+                    onVerDetalle={(id) => {
+                      sessionStorage.setItem('asig_resumen_scroll', window.scrollY);
+                      navigate(`/incidente/${id}`);
+                    }}
+                  />
+                )}
+              </div>
+            );
+          })()}
         </>
       )}
 

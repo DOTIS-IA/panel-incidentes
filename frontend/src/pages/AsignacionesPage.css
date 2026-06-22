@@ -26,11 +26,17 @@
 
 /* ── Tabs ─────────────────────────────────────────────────────────────────── */
 
+.asig-tabs-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 24px;
+}
+
 .asig-tabs {
   display: flex;
   gap: 8px;
-  margin-bottom: 24px;
-  border-bottom: 1px solid var(--border);
 }
 
 .asig-tab-btn {
@@ -386,4 +392,57 @@
 
 .btn-toolbar-asignar:hover {
   opacity: 0.85;
+}
+
+/* ── Layout casos + panel ─────────────────────────────────────────────────── */
+
+.asig-casos-layout {
+  display: flex;
+  flex-direction: column;
+}
+
+.asig-casos-layout.con-panel {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .asig-casos-layout.con-panel {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Card en preview activo ───────────────────────────────────────────────── */
+
+.caso-asig-card.preview-activo {
+  border-color: var(--accent, #6366f1);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent, #6366f1) 20%, transparent);
+}
+
+/* ── Layout resumen + panel ───────────────────────────────────────────────── */
+
+.asig-resumen-layout {
+  display: flex;
+  flex-direction: column;
+}
+
+.asig-resumen-layout.con-panel {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .asig-resumen-layout.con-panel {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Fila seleccionada en resumen ─────────────────────────────────────────── */
+
+.resumen-fila--seleccionada {
+  background: color-mix(in srgb, var(--accent, #6366f1) 8%, transparent);
 }

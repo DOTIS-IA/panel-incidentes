@@ -1,7 +1,8 @@
 /* ─── Página ─────────────────────────────────────────────────────────────── */
 .inicio-page {
-  padding: 36px 40px;
-  max-width: 1200px;
+  width: 100%;
+  max-width: 100%;
+  padding: clamp(20px, 3vh, 36px) clamp(20px, 3vw, 40px);
 }
 
 /* ─── Header ─────────────────────────────────────────────────────────────── */
@@ -91,12 +92,19 @@
   opacity: 0.8;
 }
 
+/* ─── Tabs row (tabs + botón toggle) ─────────────────────────────────────── */
+.inicio-tabs-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 24px;
+}
+
 /* ─── Tabs ───────────────────────────────────────────────────────────────── */
 .inicio-tabs {
   display: flex;
   gap: 4px;
-  margin-bottom: 24px;
-  border-bottom: 1px solid var(--border);
   padding-bottom: 0;
 }
 
@@ -139,6 +147,59 @@
   color: var(--color-primary);
 }
 
+/* ─── Botón toggle del panel ─────────────────────────────────────────────── */
+.btn-toggle-panel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px 8px 0 0;
+  border-bottom: none;
+  padding: 6px 14px 8px;
+  font-size: 12px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+  margin-bottom: -1px;
+}
+
+.btn-toggle-panel:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+.btn-toggle-panel--activo {
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  border-color: var(--border);
+}
+
+/* ─── Layout búsquedas ───────────────────────────────────────────────────── */
+.busquedas-layout {
+  display: block;
+}
+
+.busquedas-layout.con-panel {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 24px;
+  align-items: start;
+}
+
+/* ─── Layout visitados ───────────────────────────────────────────────────── */
+.visitados-layout {
+  display: block;
+}
+
+.visitados-layout.con-panel {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 24px;
+  align-items: start;
+}
+
 /* ─── Grid de reportes ───────────────────────────────────────────────────── */
 .inicio-grid {
   display: flex;
@@ -157,6 +218,7 @@
   gap: 8px;
   transition: border-color 0.18s ease, box-shadow 0.18s ease;
   box-shadow: 0 1px 6px rgba(0, 0, 0, 0.18);
+  cursor: pointer;
 }
 
 .reporte-card:hover {
@@ -168,12 +230,16 @@
   border-color: rgba(124, 58, 237, 0.35);
 }
 
+.reporte-card--seleccionado {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 1px var(--color-primary), 0 2px 12px rgba(0, 0, 0, 0.28);
+}
+
 /* Cabecera de tarjeta */
 .reporte-card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  cursor: pointer;
   gap: 12px;
   user-select: none;
 }
@@ -283,7 +349,6 @@
   gap: 8px;
 }
 
-/* Reutiliza las clases de FiltrosPage para el tag y la fecha */
 .incidente-titulo {
   margin: 0;
   color: var(--text-primary);
@@ -319,6 +384,11 @@
   padding: 16px 18px;
 }
 
+.incidente-row--seleccionado {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 1px var(--color-primary), 0 2px 12px rgba(0, 0, 0, 0.28);
+}
+
 .incidente-row-actions {
   display: flex;
   align-items: center;
@@ -332,6 +402,159 @@
   font-style: italic;
   padding-top: 14px;
   border-top: 1px solid var(--border);
+}
+
+/* ─── Panel de preview ───────────────────────────────────────────────────── */
+.preview-panel {
+  position: sticky;
+  top: 24px;
+  max-height: calc(100vh - 140px);
+  overflow-y: auto;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.22);
+}
+
+.preview-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 60px 24px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 13px;
+  min-height: 220px;
+  opacity: 0.7;
+}
+
+.preview-header {
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--bg-surface);
+  z-index: 1;
+  border-radius: 14px 14px 0 0;
+}
+
+.preview-header-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.preview-badge {
+  background: rgba(124, 58, 237, 0.14);
+  color: #a78bfa;
+  border: 1px solid rgba(124, 58, 237, 0.28);
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.preview-fecha {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.preview-filtros-texto {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.preview-lista {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 0;
+}
+
+.preview-incidente {
+  position: relative;
+  padding: 14px 36px 14px 20px;
+  border-bottom: 1px solid var(--border-soft, rgba(255,255,255,0.06));
+  cursor: pointer;
+  transition: background 0.15s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.preview-incidente:hover {
+  background: var(--bg-hover);
+}
+
+.preview-incidente:last-child {
+  border-bottom: none;
+}
+
+.preview-inc-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.preview-inc-fecha {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.preview-inc-titulo {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.35;
+}
+
+.preview-inc-summary {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.preview-inc-foot {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11px;
+  color: var(--text-muted);
+  padding-top: 6px;
+  border-top: 1px solid var(--border-soft, rgba(255,255,255,0.06));
+}
+
+.preview-inc-arrow {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.preview-incidente:hover .preview-inc-arrow {
+  opacity: 1;
+}
+
+.preview-sin-inc {
+  padding: 28px 20px;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-style: italic;
+  text-align: center;
 }
 
 /* ─── Responsive ─────────────────────────────────────────────────────────── */
@@ -348,6 +571,16 @@
   .btn-limpiar {
     width: 100%;
     text-align: center;
+  }
+
+  .busquedas-layout.con-panel,
+  .visitados-layout.con-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .preview-panel {
+    position: static;
+    max-height: 60vh;
   }
 
   .reporte-incidentes {

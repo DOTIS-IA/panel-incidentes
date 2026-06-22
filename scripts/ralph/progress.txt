@@ -1,0 +1,62 @@
+## Codebase Patterns
+
+> Seed inicial de patrones descubiertos al leer la codebase. El loop debe
+> AÑADIR aquí los patrones nuevos que descubra (no borrar los existentes).
+
+- Componentes en carpeta propia: components/<Nombre>/<Nombre>.jsx + <Nombre>.css
+  (ver AsignarModal/, Sidebar/). Sigue esa estructura para SidePreviewPanel.
+- Formateo de fechas: new Intl.DateTimeFormat('es-MX', { dateStyle:'medium', timeStyle:'short' }).format(new Date(value)). Hay helpers locales formatDateTime/formatDate en cada pagina; reusar el patron.
+- Panel sticky ya existe en Inicio.css: .preview-panel { position: sticky; top: 24px } con fallback responsivo a position: static; layout grid en .busquedas-layout(.con-panel) y ancho extra en .inicio-page--wide.
+- AsignacionesPage.css NO tiene panel sticky: hay que crear clases nuevas (lista + panel) para Casos y Resumen.
+- Estado de UI efimero -> sessionStorage con convencion <page>_<key> (inicio_tab, inicio_panel, inicio_reporte_sel, asig_tab, asig_casos_cache, asig_resumen_scroll, ...). Cache persistente -> localStorage (Reportescache.js).
+- id del incidente: IncidenteItem usa id_conv_eleven (string); AsignacionCoordinador usa id_conv (string). SidePreviewPanel debe normalizar ambos.
+- Datos del preview YA estan en memoria en cada contexto (ver spec §5). NO hacer fetch nuevo, NO tocar services/api.js.
+- Toggle existente panelVisible en Inicio.jsx (clave inicio_panel) lee 'true'/'false' como string; default true cuando la clave no existe.
+- Clic con stopPropagation: el checkbox en caso-asig-card ya hace e.stopPropagation(); respetar ese patron para no disparar el preview al marcar.
+
+## Iteration Log
+
+### US-002 — Integrar SidePreviewPanel en Inicio -> pestana Busquedas
+- **Qué se hizo:** En Inicio.jsx, pestaña Búsquedas: clic en preview-incidente ya no navega directo; en su lugar selecciona el incidente (estado previewId) y muestra <SidePreviewPanel> en el lugar del aside.preview-panel. onClose limpia previewId y vuelve a la lista. onVerDetalle navega a /incidente/:id_conv_eleven. previewId se limpia al cambiar/eliminar/limpiar reportes.
+- **Archivos tocados:**
+  - `frontend/src/pages/Inicio.jsx`
+- **Lógica clave:** previewData derivado de reporteSeleccionado.resultados.find(i => i.id_conv_eleven === previewId). Render condicional: si previewData → <SidePreviewPanel>, si no → aside.preview-panel existente. Claves sessionStorage: inicio_preview_id (nueva). Claves existentes intactas.
+- **Validación:** `npm run lint` ✓ | `npm run build` ✓
+- **Patrones nuevos:** Render condicional entre SidePreviewPanel y aside.preview-panel en el mismo slot del grid — patrón reutilizable para US-003/004/005.
+
+### US-003 — Agregar SidePreviewPanel + toggle en Inicio -> pestana Visitados
+- **Qué se hizo:** En Inicio.jsx, pestaña Visitados: añadido estado `visitadosPanelVisible` (sessionStorage `inicio_visitados_panel`, default true). `previewData` ahora también busca en `historial` cuando `tab === 'visitados'`. Añadido `handleTabChange` que limpia `previewId` al cambiar de pestaña; botones de tab ahora llaman `handleTabChange`. Inicializador de `previewId` valida contra `obtenerHistorial()` cuando la tab inicial es visitados. Render de Visitados: layout grid `.visitados-layout.con-panel`, clic en visitado selecciona para preview (cuando panel visible) en vez de navegar; `onVerDetalle` preserva `inicio_visitados_scroll`. Botón toggle en fila de tabs para visitados. Panel vacío muestra "Selecciona un incidente para ver su preview". `inicio-page--wide` también se activa para visitados con panel.
+- **Archivos tocados:**
+  - `frontend/src/pages/Inicio.jsx`
+  - `frontend/src/pages/Inicio.css`
+- **CSS añadido:** `.visitados-layout`, `.visitados-layout.con-panel` (grid 1fr 380px), `.incidente-row--seleccionado` (border primary + box-shadow). Responsive: `.visitados-layout.con-panel` colapsa a 1 columna ≤900px.
+- **Validación:** `npm run lint` ✓ | `npm run build` ✓
+- **Patrones nuevos:** handleTabChange como patrón para limpiar previewId al cambiar tab — reutilizable en AsignacionesPage para US-004/005. previewData con IIFE que ramifica por tab activa — más limpio que múltiples variables derivadas.
+
+### US-004 — Integrar SidePreviewPanel + toggle en Asignaciones -> pestana Casos
+- **Qué se hizo:** En AsignacionesPage.jsx, pestaña Casos: añadidos estados `casosPanelVisible` (asig_casos_panel, default true) y `previewId` (asig_preview_id). `handleTabChange` limpia `asig_preview_id` al cambiar de tab; botones de tab usan `handleTabChange`. Toggle button añadido en `.asig-tabs` (visible solo cuando hay resultados en Casos). Layout `.asig-casos-layout.con-panel` (grid 1fr 380px) wrappea la lista y el panel. Card `onClick` selecciona para preview cuando panel visible; navega directo cuando panel oculto. Checkbox `stopPropagation` intacto — selección múltiple y toolbar Asignar siguen funcionando. `previewId` se limpia en `buscarCasos` y `limpiarBusqueda`. `previewData` derivado por IIFE de `incidentes.find(i => i.id_conv_eleven === previewId)`.
+- **Archivos tocados:**
+  - `frontend/src/pages/AsignacionesPage.jsx`
+  - `frontend/src/pages/AsignacionesPage.css`
+- **CSS añadido:** `.btn-toggle-panel` (replica Inicio.css, margin-left:auto para alinearse a la derecha en la fila de tabs), `.asig-casos-layout` + `.asig-casos-layout.con-panel` (grid 1fr 380px, colapsa a 1 columna ≤900px), `.caso-asig-card.preview-activo` (border + box-shadow accent).
+- **Validación:** `npm run lint` ✓ | `npm run build` ✓
+- **Patrones nuevos:** IIFE inline `{incidentes.length > 0 && (() => { const previewData = ...; return (...) })()}` para derivar previewData dentro del JSX sin agregar estado extra — alternativa al patrón de variable derivada fuera del render.
+
+### US-005 — Integrar SidePreviewPanel + toggle en Asignaciones -> pestana Resumen
+- **Qué se hizo:** En AsignacionesPage.jsx, pestaña Resumen: añadido estado `resumenPanelVisible` (asig_resumen_panel, default true). Toggle button en `asig-tabs` (visible cuando hay asignaciones). Layout `.asig-resumen-layout.con-panel` (grid 1fr 380px) wrappea la tabla y el panel. Clic en fila selecciona para preview (`asig_preview_id = id_conv`) cuando panel visible; navega directo cuando oculto (guardando `asig_resumen_scroll`). `onVerDetalle` guarda scroll antes de navegar. `useEffect` valida `previewId` contra `asignaciones` tras carga (limpia si no existe). Fila seleccionada con `.resumen-fila--seleccionada`.
+- **Archivos tocados:**
+  - `frontend/src/pages/AsignacionesPage.jsx`
+  - `frontend/src/pages/AsignacionesPage.css`
+- **CSS añadido:** `.asig-resumen-layout` + `.asig-resumen-layout.con-panel` (grid 1fr 380px, colapsa a 1 columna ≤900px), `.resumen-fila--seleccionada` (background accent 8%).
+- **Validación:** `npm run lint` ✓ | `npm run build` ✓
+- **Patrones nuevos:** useEffect de validación de previewId post-carga de lista async — útil cuando la lista carga después del init del estado desde sessionStorage.
+
+### US-001 — Crear componente reutilizable SidePreviewPanel.jsx
+- **Qué se hizo:** Creado el componente SidePreviewPanel con su archivo CSS siguiendo la convención de carpeta-por-componente (AsignarModal/, Sidebar/).
+- **Archivos creados:**
+  - `frontend/src/components/SidePreviewPanel/SidePreviewPanel.jsx`
+  - `frontend/src/components/SidePreviewPanel/SidePreviewPanel.css`
+- **Lógica:** Props {data, onClose, onVerDetalle}. Normalización id = id_conv_eleven ?? id_conv. Manejo null → estado vacío. Formateo de fecha con Intl.DateTimeFormat('es-MX'). Badge de tipo + fecha en header con botón X. Folio y agente opcionales (se ocultan si no hay). Botón "Ver detalle completo" llama onVerDetalle(idConv).
+- **CSS:** Clase .side-preview-panel con position:sticky top:24px, max-height calc(100vh-140px), fallback @media ≤900px a position:static. Sigue el patrón de .preview-panel en Inicio.css.
+- **Validación:** `npm run lint` ✓ | `npm run build` ✓
+- **Patrones nuevos:** Ninguno adicional — se reutilizaron los ya documentados.

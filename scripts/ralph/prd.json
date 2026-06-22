@@ -1,0 +1,91 @@
+{
+  "project": "panel-incidentes",
+  "branchName": "ralph/side-preview-panel",
+  "description": "Panel lateral sticky de preview de casos en Inicio (Busquedas + Visitados) y Asignaciones (Casos + Resumen). Sin tocar backend. Estado de asignacion/monitorista fuera de alcance.",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Crear componente reutilizable SidePreviewPanel.jsx",
+      "description": "Como desarrollador, quiero un componente SidePreviewPanel reutilizable para mostrar el preview de un incidente y poder montarlo en cualquier lista.",
+      "acceptanceCriteria": [
+        "Existe frontend/src/components/SidePreviewPanel/SidePreviewPanel.jsx con export default",
+        "Existe frontend/src/components/SidePreviewPanel/SidePreviewPanel.css con estilo sticky (position: sticky) replicando el patron de .preview-panel",
+        "Acepta props { data, onClose, onVerDetalle }",
+        "Normaliza el id con fallback data.id_conv_eleven ?? data.id_conv y deriva fecha/tipo/titulo/resumen/folio/agente con fallbacks seguros (no crashea con data null ni parcial)",
+        "Muestra solo id_conv, fecha, tipo, titulo y resumen (sin estado de asignacion ni monitorista)",
+        "Renderiza boton X (onClose) y boton 'Ver detalle completo' que llama onVerDetalle(idConv)",
+        "cd frontend && npm run lint pasa",
+        "cd frontend && npm run build pasa"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": "Creados SidePreviewPanel.jsx y SidePreviewPanel.css en components/SidePreviewPanel/. El componente acepta props {data, onClose, onVerDetalle}, normaliza id con id_conv_eleven ?? id_conv, muestra badge de tipo + fecha en header con boton X, cuerpo con id/titulo/resumen/folio(opcional)/agente(opcional), y footer con boton 'Ver detalle completo'. Maneja data null con estado vacio. lint y build pasan."
+    },
+    {
+      "id": "US-002",
+      "title": "Integrar SidePreviewPanel en Inicio -> pestana Busquedas",
+      "description": "Como analista, quiero que al hacer clic en un incidente dentro del panel de un reporte se abra su preview en lugar de navegar directo, para revisarlo sin perder la lista.",
+      "acceptanceCriteria": [
+        "En la pestana Busquedas, hacer clic en un incidente del panel de reporte selecciona el incidente y muestra <SidePreviewPanel> en vez de navegar directo",
+        "El id seleccionado se persiste en sessionStorage con clave inicio_preview_id",
+        "El boton 'Ver detalle completo' navega a /incidente/:id_conv_eleven",
+        "El boton X (onClose) limpia inicio_preview_id y vuelve a la lista del reporte",
+        "No se rompe la seleccion de reporte existente (inicio_reporte_sel, inicio_panel)",
+        "cd frontend && npm run lint pasa",
+        "cd frontend && npm run build pasa"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "Integrado SidePreviewPanel en la pestana Busquedas de Inicio.jsx. Estado previewId en sessionStorage (inicio_preview_id). Clic en preview-incidente setea previewId; el aside.preview-panel es reemplazado por <SidePreviewPanel> cuando hay previewData. onClose limpia previewId (vuelve a la lista). onVerDetalle navega a /incidente/:id. previewId se limpia al cambiar de reporte (handleCardClick), al eliminar el reporte seleccionado, y al limpiar todos los reportes. lint y build pasan."
+    },
+    {
+      "id": "US-003",
+      "title": "Agregar SidePreviewPanel + toggle en Inicio -> pestana Visitados",
+      "description": "Como analista, quiero ver el preview de un incidente visitado en un panel lateral con toggle on/off, para revisarlo sin salir de la lista.",
+      "acceptanceCriteria": [
+        "La pestana Visitados tiene layout lista + panel sticky y un toggle propio persistido en inicio_visitados_panel (default visible)",
+        "Hacer clic en un visitado lo selecciona y muestra <SidePreviewPanel> (clave inicio_preview_id) en vez de navegar directo",
+        "El boton 'Ver detalle completo' navega a /incidente/:id_conv_eleven preservando el comportamiento de inicio_visitados_scroll",
+        "Al cambiar de pestana se limpia inicio_preview_id; al restaurar se valida que el id exista en la lista activa",
+        "cd frontend && npm run lint pasa",
+        "cd frontend && npm run build pasa"
+      ],
+      "priority": 3,
+      "passes": true,
+      "notes": "Agregado layout lista + panel sticky a la pestaña Visitados. Nuevo estado visitadosPanelVisible (inicio_visitados_panel, default true). previewData ahora también busca en historial cuando tab='visitados'. handleTabChange limpia previewId al cambiar de pestaña. previewId se valida contra historial en el inicializador de useState para visitados. Clic en visitado selecciona para preview (en vez de navegar) cuando panel visible; onVerDetalle preserva inicio_visitados_scroll. Botón toggle para visitados añadido a la fila de tabs. CSS: .visitados-layout + .visitados-layout.con-panel + .incidente-row--seleccionado + responsive. lint y build pasan."
+    },
+    {
+      "id": "US-004",
+      "title": "Integrar SidePreviewPanel + toggle en Asignaciones -> pestana Casos",
+      "description": "Como coordinador, quiero ver el preview de un caso al hacer clic en su tarjeta sin perder la seleccion multiple para asignar.",
+      "acceptanceCriteria": [
+        "La pestana Casos tiene layout lista + panel sticky (clases nuevas en AsignacionesPage.css) y toggle propio persistido en asig_casos_panel (default visible)",
+        "Clic en una caso-asig-card selecciona el incidente y muestra <SidePreviewPanel> (clave asig_preview_id) en vez de navegar directo",
+        "El checkbox de seleccion multiple y la toolbar 'Asignar seleccionados' siguen funcionando (clic en checkbox no abre el preview)",
+        "El boton 'Ver detalle completo' navega a /incidente/:id_conv_eleven",
+        "No se rompe asig_casos_cache ni la restauracion de la busqueda por folio",
+        "cd frontend && npm run lint pasa",
+        "cd frontend && npm run build pasa"
+      ],
+      "priority": 4,
+      "passes": true,
+      "notes": "Integrado SidePreviewPanel en la pestaña Casos de AsignacionesPage. Estado casosPanelVisible (asig_casos_panel, default true) y previewId (asig_preview_id). handleTabChange limpia asig_preview_id al cambiar de tab. Toggle button en asig-tabs (visible cuando hay resultados). Layout .asig-casos-layout.con-panel (grid 1fr 380px). Card onClick selecciona para preview cuando panel visible (navigga si está oculto). Checkbox stopPropagation intacto. previewId limpiado en buscarCasos y limpiarBusqueda. CSS: .asig-casos-layout, .btn-toggle-panel, .caso-asig-card.preview-activo. lint y build pasan."
+    },
+    {
+      "id": "US-005",
+      "title": "Integrar SidePreviewPanel + toggle en Asignaciones -> pestana Resumen",
+      "description": "Como coordinador, quiero ver el preview de un caso al hacer clic en una fila del resumen, sin perder la posicion de scroll.",
+      "acceptanceCriteria": [
+        "La pestana Resumen tiene panel sticky junto a la tabla y toggle propio persistido en asig_resumen_panel (default visible)",
+        "Clic en una fila selecciona el incidente y muestra <SidePreviewPanel> (clave asig_preview_id) en vez de navegar directo; el panel maneja la ausencia de summary sin romperse",
+        "El boton 'Ver detalle completo' navega a /incidente/:id_conv preservando asig_resumen_scroll",
+        "Al cambiar de pestana se limpia asig_preview_id; al restaurar se valida que el id exista en la lista activa",
+        "cd frontend && npm run lint pasa",
+        "cd frontend && npm run build pasa"
+      ],
+      "priority": 5,
+      "passes": true,
+      "notes": "Integrado SidePreviewPanel en la pestaña Resumen de AsignacionesPage. Nuevo estado resumenPanelVisible (asig_resumen_panel, default true). Toggle button añadido en asig-tabs (visible cuando hay asignaciones en Resumen). Layout .asig-resumen-layout.con-panel (grid 1fr 380px) wrappea tabla + panel. Clic en fila selecciona para preview (asig_preview_id = id_conv) cuando panel visible; navega directo cuando oculto (preservando asig_resumen_scroll). onVerDetalle también guarda asig_resumen_scroll antes de navegar. Validación de previewId contra asignaciones en useEffect post-carga. Fila activa styled con .resumen-fila--seleccionada. CSS: .asig-resumen-layout + .asig-resumen-layout.con-panel + .resumen-fila--seleccionada + responsive ≤900px. lint y build pasan."
+    }
+  ]
+}

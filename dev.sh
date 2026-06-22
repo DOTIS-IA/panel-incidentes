@@ -68,6 +68,21 @@ cd "$BACKEND"
 source "$VENV_ACTIVATE"
 python -m uvicorn main:app --reload --port 8000 &
 BACKEND_PID=$!
+
+# Espera a que el backend responda (máx 20 s)
+echo -n "    Esperando backend"
+for i in $(seq 1 20); do
+  if curl -sf http://127.0.0.1:8000/health > /dev/null 2>&1; then
+    echo ""
+    break
+  fi
+  echo -n "."
+  sleep 1
+  if [[ "$i" -eq 20 ]]; then
+    echo ""
+    die "El backend no respondió en 20 s — revisa backend/api/.env y los logs de uvicorn"
+  fi
+done
 ok "API disponible en http://localhost:8000  (docs: /docs)"
 
 # ─── 3. Frontend ──────────────────────────────────────────────────────────────

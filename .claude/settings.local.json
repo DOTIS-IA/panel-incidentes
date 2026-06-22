@@ -8,7 +8,8 @@
       "Bash(git -C /c/workspace/mas_scripts/panel-incidentes branch -a)",
       "Bash(git -C /c/workspace/mas_scripts/panel-incidentes status)",
       "Bash(git -C /c/workspace/mas_scripts/panel-incidentes log --oneline main)",
-      "Bash(git -C /c/workspace/mas_scripts/panel-incidentes log --oneline feature/roles)"
+      "Bash(git -C /c/workspace/mas_scripts/panel-incidentes log --oneline feature/roles)",
+      "PowerShell(gh auth *)"
     ]
   }
 }

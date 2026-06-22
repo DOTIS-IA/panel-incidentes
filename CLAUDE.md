@@ -12,28 +12,41 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 panel-incidentes/
 ├── backend/
 │   ├── api/
-│   │   ├── main.py          # FastAPI app — all endpoints, Pydantic models, pool
-│   │   ├── .env             # DB credentials + JWT secret (never commit)
+│   │   ├── main.py              # FastAPI app — all endpoints, Pydantic models, pool
+│   │   ├── email_service.py     # SMTP helpers: send_asignacion_email, enviar_digest_coordinadores
+│   │   ├── email_templates.py   # HTML email templates
+│   │   ├── scripts/
+│   │   │   └── create_user.py   # CLI to create/update users in public.users
+│   │   ├── .env                 # DB credentials + JWT secret (never commit)
+│   │   ├── .env.example         # Template for .env
 │   │   └── requirements.txt
 │   └── db/
-│       ├── migrations/      # SQL files applied in sorted order (YYYYMMDD_NNN_desc.sql)
+│       ├── migrations/          # SQL files applied in sorted order (YYYYMMDD_NNN_desc.sql)
 │       ├── scripts/
-│       │   └── bootstrap_db.sh   # applies migrations on docker-compose up
+│       │   └── bootstrap_db.sh  # applies migrations on docker-compose up
 │       └── create_app_roles.sql
 └── frontend/
     ├── src/
     │   ├── App.jsx                    # Routes + shared state (vista, tema, sidebarAbierta)
     │   ├── components/
     │   │   ├── Sidebar/
+    │   │   ├── SidePreviewPanel/      # Panel lateral de preview (reutilizable): recibe data, onClose, onVerDetalle
+    │   │   ├── AsignarModal/          # Modal reutilizable para asignar casos a monitoristas
+    │   │   ├── Filters/               # TimePicker, DateRangePicker, TipoExtorsion
     │   │   └── ProtectedRoute.jsx
     │   ├── pages/
-    │   │   ├── FiltrosPage.jsx
+    │   │   ├── FiltrosPage.jsx        # Búsqueda de incidentes por filtros
+    │   │   ├── Inicio.jsx             # Registros: tabs Búsquedas + Visitados con SidePreviewPanel
+    │   │   ├── MisCasosPage.jsx       # Casos asignados al monitorista actual
+    │   │   ├── AsignacionesPage.jsx   # Gestión de asignaciones (coordinador/admin): tabs Casos + Resumen, con SidePreviewPanel
     │   │   ├── DetalleIncidentePage.jsx
     │   │   └── LoginPage.jsx
     │   ├── hooks/
     │   │   └── useIncidentes.js       # wraps incidentesService with loading/error state
-    │   └── services/
-    │       └── api.js                 # BASE_URL, incidentesService, token handling
+    │   ├── services/
+    │   │   └── api.js                 # BASE_URL, incidentesService, assignmentsService, usersService
+    │   └── utils/
+    │       └── Reportescache.js       # CRUD localStorage: reportes (max 20) + visitados (max 50)
     ├── package.json
     └── vite.config.js
 ```
@@ -54,10 +67,10 @@ docker-compose up
 ```bash
 cd backend/api
 
-# Windows
-.panel\Scripts\activate
 # Linux/Mac
 source .panel/bin/activate
+# Windows
+.panel\Scripts\activate
 
 pip install -r requirements.txt
 python -m uvicorn main:app --reload
@@ -75,9 +88,29 @@ npm run lint    # ESLint check
 npm run build   # production build
 ```
 
+### User Management
+
+```bash
+cd backend/api
+source .panel/bin/activate
+
+# Create user
+python scripts/create_user.py \
+  --username alice --email alice@example.com --password secret \
+  --role coordinador_incidentes
+
+# Update existing user
+python scripts/create_user.py \
+  --username alice --email alice@example.com --password newpass \
+  --role admin --update
+
+# Roles: admin | coordinador_incidentes | monitorista_incidentes | monitor | operativo
+# Omit --password to be prompted securely
+```
+
 ### Environment Setup
 
-**Backend** — create `backend/api/.env`:
+**Backend** — copy `backend/api/.env.example` to `backend/api/.env` and fill in:
 ```
 DB_HOST=localhost
 DB_PORT=5433
@@ -88,13 +121,22 @@ JWT_SECRET_KEY=<python -c "import secrets; print(secrets.token_hex(32))">
 JWT_EXPIRE_HOURS=8
 DATA_DEFAULT_LIMIT=500
 DATA_MAX_LIMIT=2000
+CORS_ORIGINS=http://localhost:5173
+
+# Optional — email digest and assignment notifications
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=
+SMTP_PASSWORD=
+EMAIL_FROM_NAME=Panel Incidentes
+DIGEST_HOUR=8
 ```
 
 **Frontend** — create `frontend/.env`:
 ```
 VITE_API_URL=http://localhost:8000
 ```
-Without this file, `api.js` defaults to `http://localhost:8000`. Keep the file explicit when switching between local, staging, and production URLs.
+Without this file, `api.js` defaults to `http://localhost:8000`. Keep it explicit when switching between local, staging, and production URLs.
 
 ## Architecture
 
@@ -102,25 +144,33 @@ Without this file, `api.js` defaults to `http://localhost:8000`. Keep the file e
 React (Vite, port 5173)
   └── fetch via incidentesService (api.js)
         └── FastAPI (main.py, port 8000)
-              ├── CORSMiddleware — allows localhost:5173
+              ├── CORSMiddleware — allows origins from CORS_ORIGINS env var
               ├── OAuth2PasswordBearer — extracts JWT from Authorization header
+              ├── APScheduler — daily digest email to coordinators at DIGEST_HOUR:00 UTC
               ├── psycopg_pool (sync pool, min=1, max=10)
               └── PostgreSQL 16 (Docker, port 5433)
-                    ├── public schema   — users, extortion_type
+                    ├── public schema   — users, case_assignments, extortion_type
                     └── analytics schema — vw_report_conversation_panel
 ```
 
-**Authentication:** JWT via `public.users` table. Roles: `admin`, `monitor`, `operativo`. `ProtectedRoute` checks `localStorage.getItem('token')`. On 401, `api.js` clears all token keys and redirects to `/login`. To force re-login during development, run `localStorage.clear()` in browser devtools.
+**Authentication:** JWT via `public.users` table. Roles: `admin`, `coordinador_incidentes`, `monitorista_incidentes`. `ProtectedRoute` decodes the token and checks expiration — redirects to `/login` if invalid. On 401, `api.js` clears all token keys and redirects to `/login`. Token is stored in localStorage under multiple candidate keys (`access_token`, `token`, `authToken`); `getToken()` in `api.js` tries all. To force re-login during development, run `localStorage.clear()` in browser devtools.
 
-**DB roles:**
+Role-gated UI: Sidebar shows "Asignaciones" only for `coordinador_incidentes`/`admin`; shows "Mis Casos" only for `monitorista_incidentes`. "Asignar caso" button in `DetalleIncidentePage` is hidden for monitoristas.
+
+**DB roles (local dev vs production):**
 - `mas089_sync_rw` — INSERT/UPDATE (AI sync pipeline, external)
-- `mas089_dashboard_ro` — SELECT on tables and all views (this API uses this role)
+- `mas089_dashboard_ro` — SELECT on tables and views (local dev uses this role)
+- `mas089_panel_rw` — production role: SELECT on `analytics.vw_report_conversation_panel` + `public.extortion_type`, SELECT+INSERT+UPDATE on `public.users` and `public.case_assignments`
 
 **Routing & state (App.jsx):** Two routes share state (`vista`, `tema`, `sidebarAbierta`) defined in `App`:
-- `/` — renders `FiltrosPage`, `Inicio`, or `Explorador` based on `vista` state
+- `/` — renders `FiltrosPage`, `Inicio`, `MisCasosPage`, or `AsignacionesPage` based on `vista` state (`'vistas'` | `'inicio'` | `'misCasos'` | `'asignaciones'`)
 - `/incidente/:id` — renders `DetalleIncidentePage`; its Sidebar receives `onChangeVista={(v) => { setVista(v); navigate('/'); }}` so sidebar navigation works from the detail page
 
-**Data flow:** `useIncidentes` hook wraps `incidentesService` with loading/error state. Detail page calls `incidentesService.getById` directly.
+**Data flow:** `useIncidentes` hook wraps `incidentesService` with loading/error state. Detail page calls `incidentesService.getById` directly. `assignmentsService` handles case assignments (create, getAll, getMine, markAsVisto). `usersService` fetches monitoristas for the assignment modal.
+
+**Email & scheduler:** On startup, `APScheduler` schedules `enviar_digest_coordinadores` to fire daily at `DIGEST_HOUR:00 UTC`. When a case is assigned, `send_asignacion_email` fires immediately for each assigned monitorista. Both functions live in `email_service.py`. SMTP is optional — if `SMTP_USER` is not set, email sending is a no-op.
+
+**Storage pattern:** sessionStorage for ephemeral UI state (active vista, last filters, scroll position, panel visibility). localStorage for persistent cache: JWT token/role/username, saved searches via `Reportescache.js` (max 20 reports, max 50 visited). Keys follow a `<page>_<key>` naming convention (e.g. `inicio_tab`, `asig_resumen_scroll`).
 
 ## API Endpoints
 
@@ -133,11 +183,17 @@ All endpoints except `/health` and `/auth/login` require `Authorization: Bearer 
 | `GET` | `/data` | Yes | List incidentes from `analytics.vw_report_conversation_panel` |
 | `GET` | `/data/{id_conv}` | Yes | Single incidente detail — 404 if not found |
 | `GET` | `/extortion-types` | Yes | Catalog from `public.extortion_type` |
-| `POST` | `/users` | Admin only | Create a new user |
+| `POST` | `/assignments` | Coordinator/Admin | Assign cases to monitoristas |
+| `GET` | `/assignments` | Coordinator/Admin | List all assignments (filterable by `status`, `monitorista`) |
+| `GET` | `/assignments/me` | Monitorista | Cases assigned to the current user |
+| `PATCH` | `/assignments/{id}/visto` | Monitorista | Mark assignment as seen |
+| `GET` | `/users` | Coordinator/Admin | List users — filter by `?role=monitorista_incidentes` |
 
-**`/data` query params:** `fecha`, `fecha_inicio`, `fecha_fin` (date strings), `hora`, `minutos` (exact time ints), `hora_inicio`, `minutos_inicio`, `hora_fin`, `minutos_fin` (time range ints), `tipo_extorsion` (string, matched by id or normalized name), `id_conv` (string), `limit` (bounded result count).
+**`/data` query params:** `fecha`, `fecha_inicio`, `fecha_fin` (date strings), `hora`, `minutos` (exact time ints), `hora_inicio`, `minutos_inicio`, `hora_fin`, `minutos_fin` (time range ints), `tipo_extorsion` (string, matched by id or normalized name), `id_conv` (string), `folio` (string — when present, all other filters are ignored), `limit` (bounded result count).
 
 **`/auth/login` body:** `application/x-www-form-urlencoded` with `username` and `password`.
+
+> **Note:** `POST /users` (admin create user) was disabled and returns 410 Gone. Use `scripts/create_user.py` instead.
 
 ## Pydantic Models
 
@@ -145,28 +201,15 @@ All endpoints except `/health` and `/auth/login` require `Authorization: Bearer 
 - `TipoExtorsion` — `id_extortion`, `name`, `description`.
 - `TokenResponse` — `access_token`, `token_type`, `role`.
 - `UsuarioActual` — internal dep: `username`, `role`.
-- `UsuarioCreate` / `UsuarioResponse` — for `POST /users` (admin only).
+- `MonitoristaInfo` — `id`, `username`, `email`; returned by `GET /users`.
 
 Both backend and frontend normalize `extortion_name` to fix `?` encoding artifacts that may appear in DB data.
-
-## User Management
-
-`scripts/create_user.py` creates or updates users in `public.users`:
-
-```bash
-cd backend/api
-python scripts/create_user.py --username admin --email admin@example.local --password <pass> --role admin
-python scripts/create_user.py --username admin --email admin@example.local --password <new-pass> --role admin --update
-# roles: admin | monitor | operativo
-```
-
-Passwords stored as bcrypt hashes.
 
 ## Database Migrations
 
 Applied automatically by `bootstrap_db.sh` on `docker-compose up`. Naming: `YYYYMMDD_NNN_description.sql`. Baseline is `000_schema_create.sql`. Applied versions tracked in `public.schema_migrations`.
 
-The key view is `analytics.vw_report_conversation_panel` (migration `20260408_011`) — filters `public.vw_dashboard_base` to rows where `report_generated = true`.
+The key view is `analytics.vw_report_conversation_panel` (migration `20260408_011`) — filters `public.vw_dashboard_base` to rows where `report_generated = true`. Case assignments live in `public.case_assignments` (migration `20260507_013`).
 
 ## Line Endings
 
@@ -220,9 +263,7 @@ The app runs at `https://panel-incidentes.doti-ia.com` using MAS_089's nginx and
 - `mas089_mas089-net` — nginx reaches the containers
 - `database_default` — API reaches `mas089-postgres`
 
-**DB role:** `mas089_panel_rw` — minimal grants: SELECT on `analytics.vw_report_conversation_panel` and `public.extortion_type`, SELECT+INSERT on `public.users`. Created by migration `20260427_027` in `Docker-MAS-089`.
-
-**Auth:** Same `public.users` table as MAS_089's Streamlit dashboard. Same credentials work on both.
+**DB role:** `mas089_panel_rw` — minimal grants: SELECT on `analytics.vw_report_conversation_panel` and `public.extortion_type`, SELECT+INSERT+UPDATE on `public.users` and `public.case_assignments`.
 
 **nginx routing** (in `Docker-MAS-089/deployments/mas089/nginx/default.conf`):
 - `location = /api/auth/login` → `panel-incidentes-api:8000/auth/login` (rate-limited)

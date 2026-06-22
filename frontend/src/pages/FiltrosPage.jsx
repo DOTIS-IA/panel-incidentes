@@ -28,7 +28,7 @@ const FiltrosPage = () => {
   const [showWarning, setShowWarning] = useState(false);
 
 
-  const [filtros, setFiltros] = useState({
+  const defaultFiltros = {
     horaInicio: '09',
     minutosInicio: '00',
     horaFin: '14',
@@ -37,12 +37,27 @@ const FiltrosPage = () => {
     fechaFin: '',
     folio: '',
     tipoExtorsion: null,
-  });
+  };
+
+  const [filtros, setFiltros] = useState(defaultFiltros);
 
   const set = (key, val) => setFiltros((current) => ({ ...current, [key]: val }));
   const rangoInicioTotal = Number(filtros.horaInicio) * 60 + Number(filtros.minutosInicio);
   const rangoFinTotal = Number(filtros.horaFin) * 60 + Number(filtros.minutosFin);
   const rangoHoraInvalido = rangoFinTotal < rangoInicioTotal;
+
+  useEffect(() => {
+    try {
+      const cache = sessionStorage.getItem('filtros_cache');
+      if (cache) {
+        const { resultados: res, filtros: fil } = JSON.parse(cache);
+        setResultados(res || []);
+        setFiltros(fil || defaultFiltros);
+        setConsultado(true);
+      }
+    } catch { /* sessionStorage no disponible o dato corrupto */ }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -68,18 +83,10 @@ const FiltrosPage = () => {
   }, []);
 
   const limpiarFiltros = () => {
-    setFiltros({
-      horaInicio: '09',
-      minutosInicio: '00',
-      horaFin: '14',
-      minutosFin: '00',
-      fechaInicio: '',
-      fechaFin: '',
-      folio: '',
-      tipoExtorsion: null,
-    });
+    setFiltros(defaultFiltros);
     setResultados([]);
     setConsultado(false);
+    sessionStorage.removeItem('filtros_cache');
   };
 
   const handleGenerar = async () => {
@@ -93,6 +100,7 @@ const FiltrosPage = () => {
     setResultados(resultadosGenerados);
     setConsultado(true);
     guardarReporteEnCache(filtros, resultadosGenerados);
+    sessionStorage.setItem('filtros_cache', JSON.stringify({ resultados: resultadosGenerados, filtros }));
   };
 
   return (
