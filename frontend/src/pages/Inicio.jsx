@@ -148,7 +148,7 @@ const Inicio = () => {
   };
 
   return (
-    <div className={`inicio-page${(panelVisible && tab === 'busquedas' && reportes.length > 0) || (panelVisible && tab === 'visitados' && historial.length > 0) ? ' inicio-page--wide' : ''}`}>
+    <div className="inicio-page">
 
       <div className="inicio-header">
         <div>
