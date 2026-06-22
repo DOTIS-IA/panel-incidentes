@@ -20,4 +20,5 @@ bcrypt==4.2.1
 python-jose[cryptography]==3.3.0
 python-multipart==0.0.22
 apscheduler==3.10.4
+pytest
 

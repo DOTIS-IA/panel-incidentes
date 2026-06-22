@@ -130,5 +130,5 @@ def enviar_digest_coordinadores(pool) -> None:
     lineas += ["", "Ingresa al panel para ver los detalles."]
 
     subject = f"Panel Incidentes — {len(incidentes)} caso(s) nuevo(s) el {fecha_str}"
-    results = send_bulk(emails, subject, "\n".join(lineas))
+    results = send_bulk(emails, subject, "\n".join(lineas), html_digest(incidentes, fecha_str))
     print(f"[email] Digest: {len(results['sent'])} enviados, {len(results['failed'])} fallidos")
