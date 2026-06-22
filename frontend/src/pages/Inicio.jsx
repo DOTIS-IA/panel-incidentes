@@ -191,7 +191,11 @@ const Inicio = () => {
         {tab === 'busquedas' && reportes.length > 0 && (
           <button
             className={`btn-toggle-panel${panelVisible ? ' btn-toggle-panel--activo' : ''}`}
-            onClick={() => setPanelVisible((v) => !v)}
+            onClick={() => {
+              const next = !panelVisible;
+              setPanelVisible(next);
+              sessionStorage.setItem('inicio_panel', String(next));
+            }}
             title={panelVisible ? 'Ocultar panel de vista previa' : 'Mostrar panel de vista previa'}
           >
             <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
@@ -204,7 +208,12 @@ const Inicio = () => {
         {tab === 'visitados' && historial.length > 0 && (
           <button
             className={`btn-toggle-panel${visitadosPanelVisible ? ' btn-toggle-panel--activo' : ''}`}
-            onClick={() => setVisitadosPanelVisible((v) => !v)}
+            onClick={() => {
+              const next = !visitadosPanelVisible;
+              setVisitadosPanelVisible(next);
+              sessionStorage.setItem('inicio_visitados_panel', String(next));
+              if (!next) setPreviewId(null);
+            }}
             title={visitadosPanelVisible ? 'Ocultar panel de vista previa' : 'Mostrar panel de vista previa'}
           >
             <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">

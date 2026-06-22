@@ -169,19 +169,21 @@ const AsignacionesPage = () => {
         <p className="asig-subtitulo">Asigna casos a monitoristas y revisa el estado de las asignaciones.</p>
       </div>
 
-      <div className="asig-tabs">
-        <button
-          className={`asig-tab-btn ${tab === 'casos' ? 'active' : ''}`}
-          onClick={() => handleTabChange('casos')}
-        >
-          Casos
-        </button>
-        <button
-          className={`asig-tab-btn ${tab === 'resumen' ? 'active' : ''}`}
-          onClick={() => handleTabChange('resumen')}
-        >
-          Resumen
-        </button>
+      <div className="asig-tabs-row">
+        <div className="asig-tabs">
+          <button
+            className={`asig-tab-btn ${tab === 'casos' ? 'active' : ''}`}
+            onClick={() => handleTabChange('casos')}
+          >
+            Casos
+          </button>
+          <button
+            className={`asig-tab-btn ${tab === 'resumen' ? 'active' : ''}`}
+            onClick={() => handleTabChange('resumen')}
+          >
+            Resumen
+          </button>
+        </div>
         {tab === 'casos' && incidentes.length > 0 && (
           <button
             className={`btn-toggle-panel${casosPanelVisible ? ' btn-toggle-panel--activo' : ''}`}

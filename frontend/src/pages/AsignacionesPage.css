@@ -26,11 +26,17 @@
 
 /* ── Tabs ─────────────────────────────────────────────────────────────────── */
 
+.asig-tabs-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 24px;
+}
+
 .asig-tabs {
   display: flex;
   gap: 8px;
-  margin-bottom: 24px;
-  border-bottom: 1px solid var(--border);
 }
 
 .asig-tab-btn {
@@ -386,37 +392,6 @@
 
 .btn-toolbar-asignar:hover {
   opacity: 0.85;
-}
-
-/* ── Toggle panel (replicates Inicio.css btn-toggle-panel) ───────────────── */
-
-.btn-toggle-panel {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: 8px 8px 0 0;
-  border-bottom: none;
-  padding: 6px 14px 8px;
-  font-size: 12px;
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: all 0.18s ease;
-  white-space: nowrap;
-  margin-bottom: -1px;
-  margin-left: auto;
-}
-
-.btn-toggle-panel:hover {
-  color: var(--text-primary);
-  background: var(--bg-hover);
-}
-
-.btn-toggle-panel--activo {
-  color: var(--text-primary);
-  background: var(--bg-surface);
-  border-color: var(--border);
 }
 
 /* ── Layout casos + panel ─────────────────────────────────────────────────── */

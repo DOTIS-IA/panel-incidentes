@@ -23,12 +23,17 @@
 
 /* ── Tabs ─────────────────────────────────────────────────────────────────── */
 
+.miscasos-tabs-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 24px;
+}
+
 .tabs-bar {
   display: flex;
   gap: 8px;
-  margin-bottom: 24px;
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 0;
 }
 
 .tab-btn {
@@ -130,6 +135,33 @@
   font-size: 11px;
   color: var(--text-muted);
   margin-bottom: 12px;
+}
+
+/* ── Layout lista + panel ─────────────────────────────────────────────────── */
+
+.miscasos-layout {
+  display: flex;
+  flex-direction: column;
+}
+
+.miscasos-layout.con-panel {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .miscasos-layout.con-panel {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Card en preview activo ───────────────────────────────────────────────── */
+
+.caso-card--preview-activo {
+  border-color: var(--accent, #6366f1);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent, #6366f1) 20%, transparent);
 }
 
 /* ── Botón marcar visto ───────────────────────────────────────────────────── */
