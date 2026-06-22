@@ -16,14 +16,11 @@ const AsignacionesPage = () => {
   const navigate = useNavigate();
   const [tab, setTab] = useState(() => sessionStorage.getItem('asig_tab') || 'casos');
 
-  const [casosPanelVisible, setCasosPanelVisible] = useState(
-    () => sessionStorage.getItem('asig_casos_panel') !== 'false'
+  const [isPanelVisible, setIsPanelVisible] = useState(
+    () => sessionStorage.getItem('asig_panel') !== 'false'
   );
 
-  const [resumenPanelVisible, setResumenPanelVisible] = useState(
-    () => sessionStorage.getItem('asig_resumen_panel') !== 'false'
-  );
-
+  
   const [previewId, setPreviewId] = useState(
     () => sessionStorage.getItem('asig_preview_id') || null
   );
@@ -186,38 +183,38 @@ const AsignacionesPage = () => {
         </div>
         {tab === 'casos' && incidentes.length > 0 && (
           <button
-            className={`btn-toggle-panel${casosPanelVisible ? ' btn-toggle-panel--activo' : ''}`}
+            className={`btn-toggle-panel${isPanelVisible ? ' btn-toggle-panel--activo' : ''}`}
             onClick={() => {
-              const next = !casosPanelVisible;
-              setCasosPanelVisible(next);
-              sessionStorage.setItem('asig_casos_panel', String(next));
+              const next = !isPanelVisible;
+              setIsPanelVisible(next);
+              sessionStorage.setItem('asig_panel', String(next));
               if (!next) { setPreviewId(null); sessionStorage.removeItem('asig_preview_id'); }
             }}
-            title={casosPanelVisible ? 'Ocultar panel de vista previa' : 'Mostrar panel de vista previa'}
+            title={isPanelVisible ? 'Ocultar panel de vista previa' : 'Mostrar panel de vista previa'}
           >
             <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
               <rect x="1" y="1" width="13" height="13" rx="2" stroke="currentColor" strokeWidth="1.4" fill="none" />
               <line x1="9" y1="1.5" x2="9" y2="13.5" stroke="currentColor" strokeWidth="1.4" />
             </svg>
-            {casosPanelVisible ? 'Ocultar preview' : 'Mostrar preview'}
+            {isPanelVisible ? 'Ocultar preview' : 'Mostrar preview'}
           </button>
         )}
         {tab === 'resumen' && asignaciones.length > 0 && (
           <button
-            className={`btn-toggle-panel${resumenPanelVisible ? ' btn-toggle-panel--activo' : ''}`}
+            className={`btn-toggle-panel${isPanelVisible ? ' btn-toggle-panel--activo' : ''}`}
             onClick={() => {
-              const next = !resumenPanelVisible;
-              setResumenPanelVisible(next);
-              sessionStorage.setItem('asig_resumen_panel', String(next));
+              const next = !isPanelVisible;
+              setIsPanelVisible(next);
+              sessionStorage.setItem('asig_panel', String(next));
               if (!next) { setPreviewId(null); sessionStorage.removeItem('asig_preview_id'); }
             }}
-            title={resumenPanelVisible ? 'Ocultar panel de vista previa' : 'Mostrar panel de vista previa'}
+            title={isPanelVisible  ? 'Ocultar panel de vista previa' : 'Mostrar panel de vista previa'}
           >
             <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
               <rect x="1" y="1" width="13" height="13" rx="2" stroke="currentColor" strokeWidth="1.4" fill="none" />
               <line x1="9" y1="1.5" x2="9" y2="13.5" stroke="currentColor" strokeWidth="1.4" />
             </svg>
-            {resumenPanelVisible ? 'Ocultar preview' : 'Mostrar preview'}
+            {isPanelVisible ? 'Ocultar preview' : 'Mostrar preview'}
           </button>
         )}
       </div>
@@ -259,17 +256,17 @@ const AsignacionesPage = () => {
           {incidentes.length > 0 && (() => {
             const previewData = incidentes.find((i) => i.id_conv_eleven === previewId) ?? null;
             return (
-              <div className={`asig-casos-layout${casosPanelVisible ? ' con-panel' : ''}`}>
+              <div className={`asig-casos-layout${isPanelVisible ? ' con-panel' : ''}`}>
                 <div className="casos-asig-lista">
                   {incidentes.map((inc) => {
                     const seleccionado = seleccionados.has(inc.id_conv_eleven);
-                    const enPreview = casosPanelVisible && previewId === inc.id_conv_eleven;
+                    const enPreview = isPanelVisible && previewId === inc.id_conv_eleven;
                     return (
                       <article
                         key={inc.id_conv_eleven}
                         className={`caso-asig-card${seleccionado ? ' seleccionado' : ''}${enPreview ? ' preview-activo' : ''}`}
                         onClick={() => {
-                          if (casosPanelVisible) {
+                          if (isPanelVisible) {
                             setPreviewId(inc.id_conv_eleven);
                             sessionStorage.setItem('asig_preview_id', inc.id_conv_eleven);
                           } else {
@@ -296,7 +293,7 @@ const AsignacionesPage = () => {
                     );
                   })}
                 </div>
-                {casosPanelVisible && (
+                {isPanelVisible && (
                   <SidePreviewPanel
                     data={previewData}
                     onClose={() => { setPreviewId(null); sessionStorage.removeItem('asig_preview_id'); }}
@@ -350,7 +347,7 @@ const AsignacionesPage = () => {
           {asignaciones.length > 0 && (() => {
             const previewData = asignaciones.find((a) => a.id_conv === previewId) ?? null;
             return (
-              <div className={`asig-resumen-layout${resumenPanelVisible ? ' con-panel' : ''}`}>
+              <div className={`asig-resumen-layout${isPanelVisible ? ' con-panel' : ''}`}>
                 <div className="resumen-tabla-wrapper">
                   <table className="resumen-tabla">
                     <thead>
@@ -366,9 +363,9 @@ const AsignacionesPage = () => {
                       {asignaciones.map((a) => (
                         <tr
                           key={a.id}
-                          className={`resumen-fila${resumenPanelVisible && previewId === a.id_conv ? ' resumen-fila--seleccionada' : ''}`}
+                          className={`resumen-fila${isPanelVisible && previewId === a.id_conv ? ' resumen-fila--seleccionada' : ''}`}
                           onClick={() => {
-                            if (resumenPanelVisible) {
+                            if (isPanelVisible) {
                               setPreviewId(a.id_conv);
                               sessionStorage.setItem('asig_preview_id', a.id_conv);
                             } else {
@@ -392,7 +389,7 @@ const AsignacionesPage = () => {
                     </tbody>
                   </table>
                 </div>
-                {resumenPanelVisible && (
+                {isPanelVisible && (
                   <SidePreviewPanel
                     data={previewData}
                     onClose={() => { setPreviewId(null); sessionStorage.removeItem('asig_preview_id'); }}

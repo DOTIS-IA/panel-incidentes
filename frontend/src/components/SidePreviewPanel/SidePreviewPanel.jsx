@@ -41,20 +41,19 @@ const SidePreviewPanel = ({ data, onClose, onVerDetalle }) => {
       </div>
 
       <div className="spp-body">
-        <p className="spp-id">{idConv}</p>
-        <h3 className="spp-titulo">{titulo}</h3>
-        <p className="spp-resumen">{resumen}</p>
         {folio && (
           <p className="spp-meta"><span className="spp-meta-label">Folio:</span> {folio}</p>
         )}
+        <h3 className="spp-titulo">{titulo}</h3>
+        <p className="spp-resumen">{resumen}</p>
+        <p className="spp-id">{idConv}</p>
         {agente && (
           <p className="spp-meta"><span className="spp-meta-label">Agente:</span> {agente}</p>
         )}
       </div>
-
       <div className="spp-footer">
         <button className="spp-btn-detalle" onClick={() => onVerDetalle(idConv)}>
-          Ver detalle completo →
+          Ver detalle completo 
         </button>
       </div>
     </aside>

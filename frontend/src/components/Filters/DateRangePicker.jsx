@@ -129,9 +129,9 @@ const DateRangePicker = ({ fechaInicio, fechaFin, onChangeFechaInicio, onChangeF
       </div>
 
       <div className="datepicker-nav">
-        <button onClick={prevMonth} className="nav-btn">&#8249;</button>
+        <button type="button" onClick={prevMonth} className="nav-btn">&#8249;</button>
         <span>{MESES[viewMonth]} {viewYear}</span>
-        <button onClick={nextMonth} className="nav-btn">&#8250;</button>
+        <button type="button" onClick={nextMonth} className="nav-btn">&#8250;</button>
       </div>
 
       <div className="datepicker-shortcuts">
@@ -150,6 +150,7 @@ const DateRangePicker = ({ fechaInicio, fechaFin, onChangeFechaInicio, onChangeF
         {Array.from({ length: totalDias }, (_, index) => index + 1).map((day) => (
           <button
             key={day}
+            type="button"
             className={`day-btn ${isSelected(day) ? 'selected' : ''} ${isInRange(day) ? 'in-range' : ''}`}
             onClick={() => handleDayClick(day)}
           >

@@ -54,10 +54,7 @@ const Inicio = () => {
     const stored = sessionStorage.getItem('inicio_panel');
     return stored === null ? true : stored === 'true';
   });
-  const [visitadosPanelVisible, setVisitadosPanelVisible] = useState(() => {
-    const stored = sessionStorage.getItem('inicio_visitados_panel');
-    return stored === null ? true : stored === 'true';
-  });
+
   const [reporteSeleccionadoId, setReporteSeleccionadoId] = useState(() => {
     const stored = sessionStorage.getItem('inicio_reporte_sel');
     return stored ? Number(stored) : null;
@@ -86,7 +83,6 @@ const Inicio = () => {
 
   useEffect(() => { sessionStorage.setItem('inicio_tab', tab); }, [tab]);
   useEffect(() => { sessionStorage.setItem('inicio_panel', panelVisible); }, [panelVisible]);
-  useEffect(() => { sessionStorage.setItem('inicio_visitados_panel', visitadosPanelVisible); }, [visitadosPanelVisible]);
   useEffect(() => {
     if (previewId !== null) {
       sessionStorage.setItem('inicio_preview_id', previewId);
@@ -152,7 +148,7 @@ const Inicio = () => {
   };
 
   return (
-    <div className={`inicio-page${(panelVisible && tab === 'busquedas' && reportes.length > 0) || (visitadosPanelVisible && tab === 'visitados' && historial.length > 0) ? ' inicio-page--wide' : ''}`}>
+    <div className={`inicio-page${(panelVisible && tab === 'busquedas' && reportes.length > 0) || (panelVisible && tab === 'visitados' && historial.length > 0) ? ' inicio-page--wide' : ''}`}>
 
       <div className="inicio-header">
         <div>
@@ -194,7 +190,7 @@ const Inicio = () => {
             onClick={() => {
               const next = !panelVisible;
               setPanelVisible(next);
-              sessionStorage.setItem('inicio_panel', String(next));
+              if (!next) setPreviewId(null);
             }}
             title={panelVisible ? 'Ocultar panel de vista previa' : 'Mostrar panel de vista previa'}
           >
@@ -207,20 +203,19 @@ const Inicio = () => {
         )}
         {tab === 'visitados' && historial.length > 0 && (
           <button
-            className={`btn-toggle-panel${visitadosPanelVisible ? ' btn-toggle-panel--activo' : ''}`}
+            className={`btn-toggle-panel${panelVisible ? ' btn-toggle-panel--activo' : ''}`}
             onClick={() => {
-              const next = !visitadosPanelVisible;
-              setVisitadosPanelVisible(next);
-              sessionStorage.setItem('inicio_visitados_panel', String(next));
+              const next = !panelVisible;
+              setPanelVisible(next);
               if (!next) setPreviewId(null);
             }}
-            title={visitadosPanelVisible ? 'Ocultar panel de vista previa' : 'Mostrar panel de vista previa'}
+            title={panelVisible ? 'Ocultar panel de vista previa' : 'Mostrar panel de vista previa'}
           >
             <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
               <rect x="1" y="1" width="13" height="13" rx="2" stroke="currentColor" strokeWidth="1.4" fill="none" />
               <line x1="9" y1="1.5" x2="9" y2="13.5" stroke="currentColor" strokeWidth="1.4" />
             </svg>
-            {visitadosPanelVisible ? 'Ocultar preview' : 'Mostrar preview'}
+            {panelVisible ? 'Ocultar preview' : 'Mostrar preview'}
           </button>
         )}
       </div>
@@ -248,13 +243,13 @@ const Inicio = () => {
                     <article
                       key={reporte.id}
                       className={`reporte-card${abierto ? ' reporte-card--abierto' : ''}${seleccionado ? ' reporte-card--seleccionado' : ''}`}
+                      onClick={() => handleCardClick(reporte)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => e.key === 'Enter' && handleCardClick(reporte)}
                     >
                       <div
                         className="reporte-card-header"
-                        onClick={() => handleCardClick(reporte)}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(e) => e.key === 'Enter' && handleCardClick(reporte)}
                       >
                         <div className="reporte-meta-left">
                           <span className="reporte-badge">{reporte.total} incidente{reporte.total !== 1 ? 's' : ''}</span>
@@ -288,7 +283,7 @@ const Inicio = () => {
                             <div
                               key={item.id_conv_eleven}
                               className="incidente-row"
-                              onClick={() => navigate(`/incidente/${item.id_conv_eleven}`)}
+                              onClick={(e) => { e.stopPropagation(); navigate(`/incidente/${item.id_conv_eleven}`); }}
                               role="button"
                               tabIndex={0}
                               onKeyDown={(e) => e.key === 'Enter' && navigate(`/incidente/${item.id_conv_eleven}`)}
@@ -400,7 +395,7 @@ const Inicio = () => {
             />
           )}
           {historial.length > 0 && (
-            <div className={`visitados-layout${visitadosPanelVisible ? ' con-panel' : ''}`}>
+            <div className={`visitados-layout${panelVisible ? ' con-panel' : ''}`}>
               <div className="inicio-grid">
                 {historial.map((item) => {
                   const seleccionado = previewId === item.id_conv_eleven;
@@ -409,7 +404,7 @@ const Inicio = () => {
                       key={item.id_conv_eleven}
                       className={`incidente-row incidente-row--standalone${seleccionado ? ' incidente-row--seleccionado' : ''}`}
                       onClick={() => {
-                        if (visitadosPanelVisible) {
+                        if (panelVisible) {
                           setPreviewId(item.id_conv_eleven);
                         } else {
                           sessionStorage.setItem('inicio_visitados_scroll', window.scrollY);
@@ -420,7 +415,7 @@ const Inicio = () => {
                       tabIndex={0}
                       onKeyDown={(e) => {
                         if (e.key !== 'Enter') return;
-                        if (visitadosPanelVisible) {
+                        if (panelVisible) {
                           setPreviewId(item.id_conv_eleven);
                         } else {
                           sessionStorage.setItem('inicio_visitados_scroll', window.scrollY);
@@ -454,7 +449,7 @@ const Inicio = () => {
                 })}
               </div>
 
-              {visitadosPanelVisible && (
+              {panelVisible && (
                 previewData ? (
                   <SidePreviewPanel
                     data={previewData}

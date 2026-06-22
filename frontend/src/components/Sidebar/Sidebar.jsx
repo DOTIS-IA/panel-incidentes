@@ -23,8 +23,6 @@ const Sidebar = ({ vistaActiva = 'vistas', onChangeVista, tema, onToggleTema }) 
     localStorage.removeItem('access_token');
     localStorage.removeItem('role');
     localStorage.removeItem('username');
-    sessionStorage.removeItem('token');
-    sessionStorage.removeItem('access_token');
 
     window.location.href = '/login';
   };
