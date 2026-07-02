@@ -9,7 +9,8 @@
       "Bash(git -C /c/workspace/mas_scripts/panel-incidentes status)",
       "Bash(git -C /c/workspace/mas_scripts/panel-incidentes log --oneline main)",
       "Bash(git -C /c/workspace/mas_scripts/panel-incidentes log --oneline feature/roles)",
-      "PowerShell(gh auth *)"
+      "PowerShell(gh auth *)",
+      "Bash(grep -E \"\\\\.env$\")"
     ]
   }
 }
