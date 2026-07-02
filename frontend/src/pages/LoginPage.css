@@ -179,6 +179,33 @@
   border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
+.login-input-wrapper {
+  position: relative;
+}
+
+.login-input-wrapper .login-input {
+  padding-right: 44px;
+}
+
+.login-toggle-password {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.login-toggle-password:hover {
+  color: var(--text-primary);
+}
+
 /* --- Footer --- */
 .bottom-bar {
   padding: 16px 32px;

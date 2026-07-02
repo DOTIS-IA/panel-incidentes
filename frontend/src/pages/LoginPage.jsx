@@ -7,6 +7,7 @@ const LoginPage = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError]       = useState(null);
+  const [mostrarPassword, setMostrarPassword] = useState(false);
   const [loading, setLoading]   = useState(false);
 
   const navigate = useNavigate();
@@ -103,16 +104,36 @@ const LoginPage = () => {
 
               <div className="login-group">
                 <label className="login-label">Contraseña</label>
-                <input
-                  type="password"
-                  className="login-input"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                />
+                <div className="login-input-wrapper">
+                  <input
+                    type={mostrarPassword ? 'text' : 'password'}
+                    className="login-input"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                  />
+                  <button
+                    type="button"
+                    className="login-toggle-password"
+                    onClick={() => setMostrarPassword((v) => !v)}
+                    aria-label={mostrarPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                  >
+                    {mostrarPassword ? (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                        <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                        <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.6" />
+                        <line x1="3" y1="3" x2="21" y2="21" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+                      </svg>
+                    ) : (
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                        <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                        <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.6" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
               </div>
-
               {error && <div className="login-error">{error}</div>}
 
               <button type="submit" className="login-btn" disabled={loading}>

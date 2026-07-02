@@ -56,6 +56,7 @@ const handleResponse = async (res) => {
     window.localStorage.removeItem('role');
     window.sessionStorage.removeItem('token');
     window.sessionStorage.removeItem('access_token');
+    window.sessionStorage.removeItem('app_vista');
     window.location.href = '/login';
     throw new Error('Sesion expirada');
   }
