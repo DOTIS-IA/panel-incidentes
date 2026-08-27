@@ -10,6 +10,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```
 panel-incidentes/
+├── dev.sh                        # local dev: DB + backend + frontend together
+├── deploy.sh                     # production deploy (run on the server, from repo root)
+├── docker-compose.yml            # production stack — root-level, distinct from backend/db/'s
+├── .env.example                  # production env template (root — distinct from backend/api/.env.example)
+├── docs/
+│   ├── auth-and-users.md         # auth/roles contract
+│   └── case-assignments.md       # case assignment + email notification flow
 ├── backend/
 │   ├── api/
 │   │   ├── main.py              # FastAPI app — all endpoints, Pydantic models, pool
@@ -17,6 +24,8 @@ panel-incidentes/
 │   │   ├── email_templates.py   # HTML email templates
 │   │   ├── scripts/
 │   │   │   └── create_user.py   # CLI to create/update users in public.users
+│   │   ├── tests/
+│   │   │   └── test_email.py    # pytest — mocked DB pool + SMTP
 │   │   ├── .env                 # DB credentials + JWT secret (never commit)
 │   │   ├── .env.example         # Template for .env
 │   │   └── requirements.txt
@@ -53,6 +62,13 @@ panel-incidentes/
 
 ## Development Commands
 
+### Quick start (all services)
+
+```bash
+./dev.sh
+```
+Starts the DB (`backend/db` docker-compose, detached), the backend (`uvicorn --reload`), and the frontend (`npm run dev`) together, waiting for `/health` before starting the frontend. Ctrl+C stops all three. Requires `backend/api/.env` and the venv at `backend/api/.panel/` to already exist — it doesn't create them (see Environment Setup below). Use the per-service commands below when you only need one piece running.
+
 ### Database
 
 ```bash
@@ -87,6 +103,20 @@ npm run dev     # http://localhost:5173
 npm run lint    # ESLint check
 npm run build   # production build
 ```
+
+### Tests
+
+Backend has pytest tests in `backend/api/tests/` (currently `test_email.py`, covering `email_service.py`/`email_templates.py` with a mocked DB pool and mocked SMTP — no real network or DB calls):
+
+```bash
+cd backend/api
+source .panel/bin/activate
+
+pytest tests/ -v                              # all tests
+pytest tests/test_email.py::test_name -v      # single test
+```
+
+Frontend has no test suite; validate changes with `npm run lint` and `npm run build`.
 
 ### User Management
 
@@ -239,11 +269,11 @@ docker build \
 
 ### Backend environment on the server
 
-The backend container reads its DB credentials and JWT secret from environment variables. On the server, pass them via `docker-compose.yml` or a `.env` file in the same directory as the compose file. Key difference from local dev: `DB_PORT=5432` (internal Docker network port) and `DB_HOST=mas089-postgres` (container name on `database-default` network). `JWT_SECRET_KEY` must be generated once on the server and never rotated without logging out all users.
+The backend container reads its DB credentials and JWT secret from environment variables, via the root-level `.env` (see `.env.example` at repo root — distinct from `backend/api/.env.example`, which is local-dev only). Key differences from local dev: `DB_PORT=5432` (internal Docker network port) and `DB_HOST=postgres`, which resolves to the `mas089-postgres` container on the `database_default` network. `DB_USER=mas089_panel_rw`. `JWT_SECRET_KEY` must be generated once on the server and never rotated without logging out all users.
 
 ### Server integration
 
-The server runs a shared `docker-compose.yml` in `Docker-MAS-089`. This project adds two services (`panel-api` and `panel-frontend`) to that compose, both joined to `mas089-net`. Nginx proxies `panel-incidentes.doti-ia.com` → frontend:80 for the SPA and `/api/` → panel-api:8000 for the backend.
+This project has its own root-level `docker-compose.yml` (services `api`/`frontend`, containers `panel-incidentes-api`/`panel-incidentes-frontend`) — it is a standalone stack, not added into `Docker-MAS-089`'s compose file. It joins two external Docker networks that the `Docker-MAS-089` stack must already have created: `mas089_mas089-net` (so nginx can reach both containers) and `database_default` (so the API can reach `mas089-postgres`). Nginx proxies `panel-incidentes.doti-ia.com` → frontend:80 for the SPA and `/api/` → panel-api:8000 for the backend.
 
 `backend/db/` is only needed for local development. Do not copy it to the server — the server DB already has its own migrations applied.
 
@@ -253,11 +283,12 @@ This project shares the same PostgreSQL database (`bd_089`) as the `Docker-MAS-0
 
 ## Production deployment
 
-The app runs at `https://panel-incidentes.doti-ia.com` using MAS_089's nginx and Docker infrastructure. The production stack lives at `~/panel-incidentes/` on the server.
+The app runs at `https://panel-incidentes.doti-ia.com` using MAS_089's nginx and Docker infrastructure. The production stack is this repo, checked out at `~/panel-incidentes/` on the server (kept up to date via `git pull`).
 
-**Key production files (not for local dev):**
-- `~/panel-incidentes/docker-compose.yml` — production stack (joins MAS_089's external Docker networks)
-- `~/panel-incidentes/.env` — production credentials; NOT `backend/api/.env` (that's local dev only)
+**Key production files (repo root — not for local dev):**
+- `docker-compose.yml` — production stack (joins MAS_089's external Docker networks)
+- `.env.example` — template; the real `.env` on the server holds production credentials and is NOT `backend/api/.env` (that's local dev only)
+- `deploy.sh` — run from `~/panel-incidentes` on the server: checks Docker/network prerequisites, validates `.env` (`DB_PASSWORD`, `JWT_SECRET_KEY` non-empty), `git pull --ff-only`, then `docker compose up -d --build`
 
 **Networks (external, already exist in Docker):**
 - `mas089_mas089-net` — nginx reaches the containers
@@ -275,9 +306,9 @@ All nginx upstreams use `resolver 127.0.0.11 valid=30s` + variable + `rewrite ..
 **Production commands:**
 ```bash
 cd ~/panel-incidentes
+./deploy.sh                     # normal path: pulls latest code, rebuilds, restarts
 docker compose ps
-docker compose up -d --build    # rebuild after code changes
-docker compose restart api      # restart after .env changes only
+docker compose restart api      # restart after .env changes only (no code change, skip deploy.sh)
 ```
 
 **VITE_API_URL** is baked into the frontend bundle at build time as `https://panel-incidentes.doti-ia.com/api`. If the domain changes, rebuild the frontend.
